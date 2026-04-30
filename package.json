@@ -1,0 +1,48 @@
+{
+  "name": "opencode-flowdeck",
+  "version": "0.1.0",
+  "description": "FlowDeck — structured planning and execution workflows for OpenCode",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "flowdeck": "./bin/flowdeck.js",
+    "opencode-flowdeck": "./bin/flowdeck.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "agents",
+    "skills",
+    "commands",
+    "workflows",
+    "rules"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --watch",
+    "test": "bun test"
+  },
+  "keywords": ["opencode", "plugin", "ai", "workflow", "planning"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.4.0",
+    "@opencode-ai/sdk": "^1.4.0",
+    "ejs": "^3.1.9",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.7.0",
+    "unbuild": "^2.0.0",
+    "vitest": "^2.0.0"
+  }
+}

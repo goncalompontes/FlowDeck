@@ -1,0 +1,193 @@
+import { join, dirname, resolve } from "path"
+import { readFileSync, writeFileSync, existsSync } from "fs"
+
+const PLANNING_DIR = ".planning"
+const STATE_FILE = "STATE.md"
+const PLAN_FILE = "PLAN.md"
+const RESULT_FILE = "RESULT.md"
+
+export { codebaseDir } from "./codebase-state"
+
+export function planningDir(directory: string): string {
+  return join(directory, PLANNING_DIR)
+}
+
+export function statePath(directory: string): string {
+  return join(planningDir(directory), STATE_FILE)
+}
+
+export function phasePlanPath(directory: string, phase: number): string {
+  return join(planningDir(directory), "phases", `phase-${phase}`, PLAN_FILE)
+}
+
+export function resultPath(directory: string, phase: number): string {
+  return join(planningDir(directory), "phases", `phase-${phase}`, RESULT_FILE)
+}
+
+export interface PlanningState {
+  phase: number
+  status: string
+  plan_confirmed: boolean
+  steps_complete: number[]
+  steps_pending: number[]
+  last_action: string
+  next_action: string
+  blockers: string[]
+}
+
+export function parseState(content: string): Record<string, unknown> {
+  const result: Record<string, unknown> = { exists: false }
+
+  // Strip YAML frontmatter and parse its top-level scalar keys
+  let body = content
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+  if (frontmatterMatch) {
+    body = frontmatterMatch[2]
+    for (const line of frontmatterMatch[1].split("\n")) {
+      const fm = line.match(/^([a-z_][a-z0-9_]*):\s*(.+)/)
+      if (fm) {
+        result[fm[1].trim()] = fm[2].trim().replace(/^["']|["']$/g, "")
+      }
+    }
+  }
+
+  // Parse key:value pairs from body — flattened to top level (overrides frontmatter)
+  for (const line of body.split("\n")) {
+    if (line.startsWith("#")) continue
+    const kvMatch = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*):\s*(.*)/)
+    if (kvMatch) {
+      const key = kvMatch[1].trim()
+      const value = kvMatch[2].trim()
+      if (key === "steps_complete" || key === "steps_pending") {
+        result[key] = value.replace(/[\[\]]/g, "").split(",").map(s => s.trim()).filter(Boolean)
+      } else if (key === "plan_confirmed") {
+        result[key] = value === "true"
+      } else if (value !== "" && !isNaN(Number(value)) && key !== "plan_file" && key !== "confirmed_at") {
+        result[key] = Number(value)
+      } else {
+        result[key] = value.replace(/^["']|["']$/g, "")
+      }
+    }
+  }
+
+  result["exists"] = true
+  return result
+}
+
+export function timestamp(): string {
+  return new Date().toISOString()
+}
+
+export function appendHistory(stateContent: string, action: string): string {
+  const entry = `- ${timestamp()} — ${action}`
+  if (stateContent.includes("## Session History")) {
+    return stateContent.replace(/(\n## Session History\n)/, `$1${entry}\n`)
+  }
+  return stateContent + `\n## Session History\n${entry}\n`
+}
+
+export function readPlanningState(dir: string): PlanningState {
+  const sp = statePath(dir)
+  if (!existsSync(sp)) {
+    return { phase: 0, status: "", plan_confirmed: false, steps_complete: [], steps_pending: [], last_action: "", next_action: "", blockers: [] }
+  }
+  const content = readFileSync(sp, "utf-8")
+  const parsed = parseState(content)
+  return {
+    phase: (parsed.phase as number) || 1,
+    status: (parsed.status as string) || "",
+    plan_confirmed: Boolean(parsed.plan_confirmed),
+    steps_complete: (parsed.steps_complete as number[]) || [],
+    steps_pending: (parsed.steps_pending as number[]) || [],
+    last_action: (parsed.last_action as string) || "",
+    next_action: (parsed.next_action as string) || "",
+    blockers: (parsed.blockers as string[]) || []
+  }
+}
+
+export function updatePlanningState(dir: string, updates: Partial<PlanningState>): void {
+  const sp = statePath(dir)
+  if (!existsSync(sp)) return
+  let content = readFileSync(sp, "utf-8")
+
+  if (updates.phase !== undefined) {
+    content = content.replace(/^phase:\s*.*/m, `phase: ${updates.phase}`)
+    content = appendHistory(content, `Phase changed to ${updates.phase}`)
+  }
+  if (updates.status !== undefined) {
+    content = content.replace(/^status:\s*.*/m, `status: ${updates.status}`)
+    content = appendHistory(content, `Status changed to ${updates.status}`)
+  }
+  if (updates.last_action !== undefined) {
+    content = content.replace(/^last_action:\s*.*/m, `last_action: "${updates.last_action}"`)
+    content = appendHistory(content, updates.last_action)
+  }
+  if (updates.next_action !== undefined) {
+    content = content.replace(/^next_action:\s*.*/m, `next_action: "${updates.next_action}"`)
+    content = appendHistory(content, `Next action: ${updates.next_action}`)
+  }
+  if (updates.blockers !== undefined) {
+    const blockersMd = updates.blockers.length > 0
+      ? updates.blockers.map(b => `- ${b}`).join("\n")
+      : "- none"
+    content = content.replace(/^## Blockers\n[\s\S]*?(?=\n##|\n#$)/m, `## Blockers\n${blockersMd}\n`)
+    content = appendHistory(content, `Blockers updated: ${updates.blockers.length} item(s)`)
+  }
+  if (updates.plan_confirmed !== undefined) {
+    content = content.replace(/^plan_confirmed:\s*.*/m, `plan_confirmed: ${updates.plan_confirmed}`)
+    content = appendHistory(content, `Plan confirmed: ${updates.plan_confirmed}`)
+  }
+  if (updates.steps_complete !== undefined) {
+    content = content.replace(/^steps_complete:\s*.*/m, `steps_complete: [${updates.steps_complete.join(", ")}]`)
+    content = appendHistory(content, `Steps complete: [${updates.steps_complete.join(", ")}]`)
+  }
+  if (updates.steps_pending !== undefined) {
+    content = content.replace(/^steps_pending:\s*.*/m, `steps_pending: [${updates.steps_pending.join(", ")}]`)
+    content = appendHistory(content, `Steps pending: [${updates.steps_pending.join(", ")}]`)
+  }
+  writeFileSync(sp, content, "utf-8")
+}
+
+export function findWorkspaceRoot(startDir: string): string | null {
+  let current = startDir
+  for (;;) {
+    const configPath = join(current, ".planning", "config.json")
+    if (existsSync(configPath)) {
+      try {
+        const config = JSON.parse(readFileSync(configPath, "utf-8"))
+        if (config.sub_repos && Array.isArray(config.sub_repos) && config.sub_repos.length > 0) {
+          return current
+        }
+      } catch { /* ignore */ }
+    }
+    const parent = dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+  return null
+}
+
+export function resolveSubRepos(configPath: string, subRepos: string[]): string[] {
+  const configDir = dirname(configPath)
+  return subRepos.map(r => {
+    if (resolve(r) === r) return r
+    return resolve(configDir, r)
+  })
+}
+
+export function getWorkspaceConfig(dir: string): { sub_repos: string[] | null, workspace_mode: "shared" | "per-repo", workspace_root?: string } | null {
+  const root = findWorkspaceRoot(dir)
+  if (!root) return null
+  const configPath = join(root, ".planning", "config.json")
+  if (!existsSync(configPath)) return null
+  try {
+    const config = JSON.parse(readFileSync(configPath, "utf-8"))
+    return {
+      sub_repos: Array.isArray(config.sub_repos) ? config.sub_repos : null,
+      workspace_mode: (config.workspace_mode === "per-repo" ? "per-repo" : "shared"),
+      workspace_root: config.workspace_root || undefined,
+    }
+  } catch {
+    return null
+  }
+}
