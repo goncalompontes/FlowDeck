@@ -240,7 +240,7 @@ Systematic approach to producing `.codebase/` documentation: `STACK.md` (exact p
         Read actual source files and include file:line examples for each pattern.
 ```
 
-**When to use:** When starting work on an unfamiliar codebase, before a major feature, or when `.codebase/` is missing or stale (triggered by `/map-codebase`).
+**When to use:** When starting work on an unfamiliar codebase, before a major feature, or when `.codebase/` is missing or stale (triggered by `/fd-map-codebase`).
 
 ---
 
@@ -254,7 +254,7 @@ Guides systematic exploration of a new codebase for a new contributor or agent s
                Trace one authenticated API request from route to database.
 ```
 
-**When to use:** At the start of work on a project you haven't seen before, or when an agent needs to understand the project quickly without a full `/map-codebase` run.
+**When to use:** At the start of work on a project you haven't seen before, or when an agent needs to understand the project quickly without a full `/fd-map-codebase` run.
 
 ---
 

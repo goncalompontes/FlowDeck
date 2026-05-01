@@ -3,7 +3,7 @@ import { statePath, timestamp } from "../../tools/planning-state-lib"
 import { confirmPrompt } from "../../lib/confirmation"
 
 export const checkpointCommand = {
-  name: "checkpoint",
+  name: "fd-checkpoint",
   description: "Force-save current state to STATE.md — safe to close session",
   async execute(context, args?: { yes?: boolean }) {
     const dir = context.directory ?? process.cwd()

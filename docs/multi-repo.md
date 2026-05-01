@@ -24,7 +24,7 @@ Single-repo mode is sufficient for all other work. Multi-repo coordination adds 
 If your root (orchestrating) repository is not already a FlowDeck project:
 
 ```
-/new-project MyPlatform
+/fd-new-project MyPlatform
 ```
 
 This creates `.planning/` and `.planning/config.json` in the root repo.
@@ -32,10 +32,10 @@ This creates `.planning/` and `.planning/config.json` in the root repo.
 ### Step 2 — Register service repositories
 
 ```
-/multi-repo --add ../user-service upstream-api
-/multi-repo --add ../order-service consumer
-/multi-repo --add ../notification-service consumer
-/multi-repo --add ../api-gateway edge
+/fd-multi-repo --add ../user-service upstream-api
+/fd-multi-repo --add ../order-service consumer
+/fd-multi-repo --add ../notification-service consumer
+/fd-multi-repo --add ../api-gateway edge
 ```
 
 Each `--add` command:
@@ -46,7 +46,7 @@ Each `--add` command:
 ### Step 3 — Verify registration
 
 ```
-/multi-repo --list
+/fd-multi-repo --list
 ```
 
 Expected output:
@@ -140,7 +140,7 @@ update all consumer services to use the new endpoint.
 
 ## CHANGE PLAN Format
 
-`@multi-repo-coordinator` produces a CHANGE PLAN that is saved to `.planning/multi-repo/CHANGE-<timestamp>.md`:
+`@multi-repo-coordinator` produces a CHANGE PLAN that is saved to `.planning/fd-multi-repo/CHANGE-<timestamp>.md`:
 
 ```
 CHANGE PLAN — user-preferences feature
@@ -183,7 +183,7 @@ The `multi-repo-flow` workflow orchestrates the full end-to-end process:
 4. **Execute** — `@coder` is invoked per repo in order; `@tester` runs per repo in parallel with `@coder` (using that repo's test suite)
 5. **Verify** — `@reviewer` and `@security-auditor` run per repo after implementation; integration tests are run across the full service mesh in staging before any production rollout
 
-Each step produces output files in `.planning/multi-repo/` so the entire process is auditable.
+Each step produces output files in `.planning/fd-multi-repo/` so the entire process is auditable.
 
 ---
 
@@ -191,10 +191,10 @@ Each step produces output files in `.planning/multi-repo/` so the entire process
 
 | Command | What it does |
 |---------|-------------|
-| `/multi-repo --add <path> <role>` | Register a repo with the given path and role |
-| `/multi-repo --list` | Print a table of all registered repos |
-| `/multi-repo --status` | Show `git status` summary for every registered repo |
-| `/multi-repo --remove <name>` | Remove a repo from `sub_repos` by name |
+| `/fd-multi-repo --add <path> <role>` | Register a repo with the given path and role |
+| `/fd-multi-repo --list` | Print a table of all registered repos |
+| `/fd-multi-repo --status` | Show `git status` summary for every registered repo |
+| `/fd-multi-repo --remove <name>` | Remove a repo from `sub_repos` by name |
 
 ---
 

@@ -4,7 +4,7 @@ import { codebaseStateTool } from "../../tools/codebase-state"
 import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
 
 export const newFeatureCommand = {
-  name: "new-feature",
+  name: "fd-new-feature",
   description: "Execute feature implementation — guard check, orchestrator coordination, parallel coder+researcher, reviewer, tester, STATE.md update",
   async execute(context, args?: { feature?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

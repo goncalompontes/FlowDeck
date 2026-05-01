@@ -16,5 +16,5 @@
 | All commands | [commands.md](./commands.md) |
 | Language rules | [rules.md](./rules.md) |
 | Parallel execution | [parallel-execution.md](./parallel-execution.md) |
-| Multi-repo / microservices | [multi-repo.md](./multi-repo.md) |
+| Multi-repo / microservices | [multi-repo.md](./fd-multi-repo.md) |
 | System notifications | [notifications.md](./notifications.md) |

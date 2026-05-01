@@ -49,26 +49,26 @@ FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orch
 
 | Command | What it does |
 |---------|--------------|
-| `/new-project <name>` | Initialize `.planning/` directory structure for a new project |
-| `/discuss <phase>` | Run structured requirements Q&A with `@discusser` |
-| `/plan <phase>` | Generate a wave-structured `PLAN.md` (requires `CONFIRMED` to execute) |
-| `/new-feature "<description>"` | Execute full feature workflow via `@orchestrator` |
-| `/review-code [staged\|branch]` | Parallel review by `@reviewer`, `@security-auditor`, `@tester` |
-| `/fix-bug "<description>"` | Diagnose and fix a bug with regression test |
-| `/checkpoint` | Save current state — safe to close the session after this |
-| `/resume` | Reload `STATE.md` and `PLAN.md` context in a new session |
-| `/progress` | Print current state, active plan, and recent results |
-| `/map-codebase` | Generate `.codebase/` documentation from source analysis |
-| `/roadmap` | View or update phase statuses and milestones |
-| `/dashboard` | Open the project dashboard with phase progress and blockers |
-| `/deploy-check` | Run pre-deployment checks and produce a go/no-go verdict |
-| `/write-docs` | Generate or update project documentation |
-| `/multi-repo` | Coordinate a change across multiple registered repositories |
-| `/settings` | View or update FlowDeck model assignments and configuration |
-| `/impact-radar` | Predict affected files/APIs/tests before editing |
-| `/blast-radius` | Show downstream consequences and hidden dependencies of a change |
-| `/translate-intent` | Convert vague request into ranked concrete implementation options |
-| `/volatility-map` | Show unstable code zones by churn and hotfix frequency |
-| `/regression-predict` | Estimate likely regression categories before making a change |
-| `/test-gap` | Identify weakly-tested areas in a proposed change |
-| `/review-route` | Route risky patches to security, backend, infra, or domain reviewers |
+| `/fd-new-project <name>` | Initialize `.planning/` directory structure for a new project |
+| `/fd-discuss <phase>` | Run structured requirements Q&A with `@discusser` |
+| `/fd-plan <phase>` | Generate a wave-structured `PLAN.md` (requires `CONFIRMED` to execute) |
+| `/fd-new-feature "<description>"` | Execute full feature workflow via `@orchestrator` |
+| `/fd-review-code [staged\|branch]` | Parallel review by `@reviewer`, `@security-auditor`, `@tester` |
+| `/fd-fix-bug "<description>"` | Diagnose and fix a bug with regression test |
+| `/fd-checkpoint` | Save current state — safe to close the session after this |
+| `/fd-resume` | Reload `STATE.md` and `PLAN.md` context in a new session |
+| `/fd-progress` | Print current state, active plan, and recent results |
+| `/fd-map-codebase` | Generate `.codebase/` documentation from source analysis |
+| `/fd-roadmap` | View or update phase statuses and milestones |
+| `/fd-dashboard` | Open the project dashboard with phase progress and blockers |
+| `/fd-deploy-check` | Run pre-deployment checks and produce a go/no-go verdict |
+| `/fd-write-docs` | Generate or update project documentation |
+| `/fd-multi-repo` | Coordinate a change across multiple registered repositories |
+| `/fd-settings` | View or update FlowDeck model assignments and configuration |
+| `/fd-impact-radar` | Predict affected files/APIs/tests before editing |
+| `/fd-blast-radius` | Show downstream consequences and hidden dependencies of a change |
+| `/fd-translate-intent` | Convert vague request into ranked concrete implementation options |
+| `/fd-volatility-map` | Show unstable code zones by churn and hotfix frequency |
+| `/fd-regression-predict` | Estimate likely regression categories before making a change |
+| `/fd-test-gap` | Identify weakly-tested areas in a proposed change |
+| `/fd-review-route` | Route risky patches to security, backend, infra, or domain reviewers |

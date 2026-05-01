@@ -3,7 +3,7 @@ import { statePath, planningDir, codebaseDir, timestamp, readPlanningState } fro
 import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
 
 export const fixBugCommand = {
-  name: "fix-bug",
+  name: "fd-fix-bug",
   description: "Load STATE.md + ARCHITECTURE.md — explore scope — researcher — mini-plan — coder fix — regression test — reviewer confirmation",
   async execute(context, args?: { scope?: string; bug?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

@@ -5,6 +5,6 @@ Run the FlowDeck roadmap workflow to view or update project phases and milestone
 
 ## What Next?
 
-1. **Start next phase** → `/new-feature [description]`
-2. **View progress** → `/progress`
-3. **Check dashboard** → `/dashboard`
+1. **Start next phase** → `/fd-new-feature [description]`
+2. **View progress** → `/fd-progress`
+3. **Check dashboard** → `/fd-dashboard`

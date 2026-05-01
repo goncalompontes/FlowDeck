@@ -3,7 +3,7 @@ import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const volatilityMapCommand = {
-  name: "volatility-map",
+  name: "fd-volatility-map",
   description: "Codebase Volatility Map — highlight unstable zones based on git churn, hotfix frequency, and unresolved TODO clusters. Updates .codebase/VOLATILITY.json.",
   async execute(context, args?: { threshold?: "stable" | "moderate" | "volatile" | "critical"; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

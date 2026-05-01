@@ -52,17 +52,17 @@ See [Installation](docs/installation.md) for prerequisites, verification steps, 
 FlowDeck structures every feature through a four-step cycle:
 
 ```
-/new-project  →  /discuss  →  /plan  →  /new-feature
+/fd-new-project  →  /fd-discuss  →  /fd-plan  →  /fd-new-feature
 ```
 
 | Step | Command | What happens |
 |------|---------|--------------|
-| **Initialize** | `/new-project MyApp` | Creates `.planning/` directory with `PROJECT.md`, `STATE.md`, and `ROADMAP.md` |
-| **Discuss** | `/discuss 1` | `@discusser` runs structured Q&A, saves decisions to `DISCUSS.md` |
-| **Plan** | `/plan 1` | `@flowdeck-planner` builds a wave-structured `PLAN.md`; you type `CONFIRMED` to proceed |
-| **Execute** | `/new-feature "…"` | `@orchestrator` delegates to `@architect`, `@coder`, `@tester`, `@reviewer` in waves |
+| **Initialize** | `/fd-new-project MyApp` | Creates `.planning/` directory with `PROJECT.md`, `STATE.md`, and `ROADMAP.md` |
+| **Discuss** | `/fd-discuss 1` | `@discusser` runs structured Q&A, saves decisions to `DISCUSS.md` |
+| **Plan** | `/fd-plan 1` | `@flowdeck-planner` builds a wave-structured `PLAN.md`; you type `CONFIRMED` to proceed |
+| **Execute** | `/fd-new-feature "…"` | `@orchestrator` delegates to `@architect`, `@coder`, `@tester`, `@reviewer` in waves |
 
-State is written to `.planning/STATE.md` after each phase. Use `/checkpoint` to save mid-session and `/resume` to reload context in a new session.
+State is written to `.planning/STATE.md` after each phase. Use `/fd-checkpoint` to save mid-session and `/fd-resume` to reload context in a new session.
 
 ---
 

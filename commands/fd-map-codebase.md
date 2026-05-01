@@ -22,6 +22,6 @@ Analyze and document the codebase for AI agent context.
 
 ## What Next?
 
-1. **Start discussion** → `/discuss`
-2. **Write documentation** → `/write-docs`
-3. **View dashboard** → `/dashboard`
+1. **Start discussion** → `/fd-discuss`
+2. **Write documentation** → `/fd-write-docs`
+3. **View dashboard** → `/fd-dashboard`

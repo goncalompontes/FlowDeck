@@ -8,10 +8,10 @@ FlowDeck fires desktop notifications when commands that require your attention c
 
 When an interactive command finishes (one that either asks questions or produces output you need to approve), FlowDeck sends a desktop notification through the OS notification system. Notification urgency depends on the command:
 
-- **Critical-level (urgent):** `/discuss`, `/plan`, `/review-code`, `/deploy-check`, `/new-project`  
+- **Critical-level (urgent):** `/fd-discuss`, `/fd-plan`, `/fd-review-code`, `/fd-deploy-check`, `/fd-new-project`  
   These commands present questions or decisions that block further progress. The notification is sent at high urgency so it appears even in Do Not Disturb mode on some systems.
 
-- **Info-level:** `/new-feature`, `/fix-bug`, `/write-docs`, `/checkpoint`  
+- **Info-level:** `/fd-new-feature`, `/fd-fix-bug`, `/fd-write-docs`, `/fd-checkpoint`  
   These commands complete autonomously and notify you that output is ready for review. Low urgency — appears in notification center but does not interrupt focus.
 
 Notifications are **best-effort**: if the notification system is unavailable (missing package, SSH session without display, headless CI), FlowDeck logs a warning and continues silently. No command is blocked by a notification failure.
@@ -95,15 +95,15 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($template)
 
 | Command | Title | Body |
 |---------|-------|------|
-| `/discuss` | `FlowDeck: /discuss` | Your input is needed — please check OpenCode |
-| `/plan` | `FlowDeck: /plan` | Your input is needed — please check OpenCode |
-| `/review-code` | `FlowDeck: /review-code` | Your input is needed — please check OpenCode |
-| `/deploy-check` | `FlowDeck: /deploy-check` | Your input is needed — please check OpenCode |
-| `/new-project` | `FlowDeck: /new-project` | Your input is needed — please check OpenCode |
-| `/new-feature` | `FlowDeck: /new-feature complete` | Review the output and choose your next step |
-| `/fix-bug` | `FlowDeck: /fix-bug complete` | Review the output and choose your next step |
-| `/write-docs` | `FlowDeck: /write-docs complete` | Review the output and choose your next step |
-| `/checkpoint` | `FlowDeck: /checkpoint` | State saved — safe to close this session |
+| `/fd-discuss` | `FlowDeck: /fd-discuss` | Your input is needed — please check OpenCode |
+| `/fd-plan` | `FlowDeck: /fd-plan` | Your input is needed — please check OpenCode |
+| `/fd-review-code` | `FlowDeck: /fd-review-code` | Your input is needed — please check OpenCode |
+| `/fd-deploy-check` | `FlowDeck: /fd-deploy-check` | Your input is needed — please check OpenCode |
+| `/fd-new-project` | `FlowDeck: /fd-new-project` | Your input is needed — please check OpenCode |
+| `/fd-new-feature` | `FlowDeck: /fd-new-feature complete` | Review the output and choose your next step |
+| `/fd-fix-bug` | `FlowDeck: /fd-fix-bug complete` | Review the output and choose your next step |
+| `/fd-write-docs` | `FlowDeck: /fd-write-docs complete` | Review the output and choose your next step |
+| `/fd-checkpoint` | `FlowDeck: /fd-checkpoint` | State saved — safe to close this session |
 
 ---
 

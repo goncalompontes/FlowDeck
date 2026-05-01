@@ -111,7 +111,7 @@ steps_pending: []
 }
 
 export const newProjectCommand = {
-  name: "new-project",
+  name: "fd-new-project",
   description: "Initialize .planning/ structure for greenfield projects",
   async execute(context) {
     const dir = context.directory ?? process.cwd()

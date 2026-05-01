@@ -4,7 +4,7 @@ Workflows define how agents collaborate in multi-step sequences. They live in `f
 
 ## How Workflows Work
 
-1. You run a command (e.g., `/plan`)
+1. You run a command (e.g., `/fd-plan`)
 2. The command's plugin handler injects workflow context into the session
 3. The AI reads the workflow steps and delegates to the named agents in order
 4. Each step's output becomes context for the next step
@@ -13,22 +13,22 @@ Workflows define how agents collaborate in multi-step sequences. They live in `f
 ## The Core FlowDeck Cycle
 
 ```
-/new-project
+/fd-new-project
      ↓
- /discuss  →  .planning/phases/phase-N/DISCUSS.md  (locked decisions)
+ /fd-discuss  →  .planning/phases/phase-N/DISCUSS.md  (locked decisions)
      ↓
- /plan     →  .planning/phases/phase-N/PLAN.md     (confirmed plan)
+ /fd-plan     →  .planning/phases/phase-N/PLAN.md     (confirmed plan)
      ↓
- /new-feature  →  implemented, tested, reviewed code
+ /fd-new-feature  →  implemented, tested, reviewed code
      ↓
- /review-code  →  review report (CRITICAL/HIGH/MEDIUM/PASS)
+ /fd-review-code  →  review report (CRITICAL/HIGH/MEDIUM/PASS)
      ↓
- /deploy-check →  GO / NO-GO decision
+ /fd-deploy-check →  GO / NO-GO decision
      ↓
- /checkpoint   →  .planning/STATE.md saved
+ /fd-checkpoint   →  .planning/STATE.md saved
 ```
 
-Each step gates the next. `/plan` will not proceed without a confirmed `DISCUSS.md`. `/new-feature` will not execute without a confirmed `PLAN.md`.
+Each step gates the next. `/fd-plan` will not proceed without a confirmed `DISCUSS.md`. `/fd-new-feature` will not execute without a confirmed `PLAN.md`.
 
 ---
 
@@ -36,20 +36,20 @@ Each step gates the next. `/plan` will not proceed without a confirmed `DISCUSS.
 
 | Workflow file | Triggered by | Agents involved |
 |--------------|-------------|----------------|
-| `discuss-flow.md` | `/discuss` | `@orchestrator`, `@discusser` |
-| `plan-flow.md` | `/plan` | `@orchestrator`, `@flowdeck-planner`, `@flowdeck-plan-checker` |
-| `plan-phase.md` | `/plan-phase [N]` | `@flowdeck-planner`, `@flowdeck-plan-checker`, `@orchestrator` |
-| `execute-flow.md` | `/new-feature` | `@orchestrator`, `@coder`, `@reviewer` |
+| `discuss-flow.md` | `/fd-discuss` | `@orchestrator`, `@discusser` |
+| `plan-flow.md` | `/fd-plan` | `@orchestrator`, `@flowdeck-planner`, `@flowdeck-plan-checker` |
+| `plan-phase.md` | `/fd-plan-phase [N]` | `@flowdeck-planner`, `@flowdeck-plan-checker`, `@orchestrator` |
+| `execute-flow.md` | `/fd-new-feature` | `@orchestrator`, `@coder`, `@reviewer` |
 | `execute-phase.md` | `/execute-phase [N]` | `@orchestrator`, `@flowdeck-executor` |
-| `fix-bug-flow.md` | `/fix-bug` | `@orchestrator`, `@debug-specialist`, `@researcher`, `@tester`, `@coder`, `@reviewer` |
+| `fix-bug-flow.md` | `/fd-fix-bug` | `@orchestrator`, `@debug-specialist`, `@researcher`, `@tester`, `@coder`, `@reviewer` |
 | `debug-flow.md` | `/debug` | `@debug-specialist`, `@tester`, `@coder` |
-| `review-code-flow.md` | `/review-code` | `@orchestrator`, `@parallel-coordinator`, `@reviewer`, `@researcher`, `@tester` |
-| `deploy-check-flow.md` | `/deploy-check` | `@parallel-coordinator`, `@orchestrator`, `@security-auditor`, `@tester`, `@reviewer` |
+| `review-code-flow.md` | `/fd-review-code` | `@orchestrator`, `@parallel-coordinator`, `@reviewer`, `@researcher`, `@tester` |
+| `deploy-check-flow.md` | `/fd-deploy-check` | `@parallel-coordinator`, `@orchestrator`, `@security-auditor`, `@tester`, `@reviewer` |
 | `refactor-flow.md` | `/refactor` | `@tester`, `@mapper`, `@refactor-guide`, `@coder`, `@orchestrator` |
-| `write-docs-flow.md` | `/write-docs` | `@code-explorer`, `@writer`, `@reviewer`, `@doc-updater` |
-| `map-codebase-flow.md` | `/map-codebase` | `@orchestrator`, `@mapper` (×6 in parallel) |
+| `write-docs-flow.md` | `/fd-write-docs` | `@code-explorer`, `@writer`, `@reviewer`, `@doc-updater` |
+| `map-codebase-flow.md` | `/fd-map-codebase` | `@orchestrator`, `@mapper` (×6 in parallel) |
 | `parallel-execution-flow.md` | Triggered by `@parallel-coordinator` | `@parallel-coordinator`, `@researcher`, `@code-explorer`, `@architect`, `@coder`, `@tester`, `@reviewer`, `@security-auditor` |
-| `multi-repo-flow.md` | `/multi-repo` | `@multi-repo-coordinator`, `@architect`, `@coder`, `@tester`, `@reviewer` |
+| `multi-repo-flow.md` | `/fd-multi-repo` | `@multi-repo-coordinator`, `@architect`, `@coder`, `@tester`, `@reviewer` |
 
 ---
 
@@ -57,7 +57,7 @@ Each step gates the next. `/plan` will not proceed without a confirmed `DISCUSS.
 
 ### discuss-flow
 
-**Triggered by:** `/discuss`
+**Triggered by:** `/fd-discuss`
 
 The discuss flow drives the requirements extraction phase. It starts by loading `PROJECT.md` and `STATE.md` to understand the current phase and any decisions already made. The `@orchestrator` extracts the current phase number, then spawns `@discusser` with that context so it avoids re-asking about settled decisions.
 
@@ -79,7 +79,7 @@ Before the file is marked confirmed, `@orchestrator` presents a summary of all d
 name: discuss-flow
 description: "Orchestrates discuss phase (context load → @discusser Q&A → pause → decisions → save)"
 triggers:
-  - /discuss
+  - /fd-discuss
 steps:
   - name: load_context
     agent: "@orchestrator"
@@ -107,9 +107,9 @@ steps:
 
 ### plan-flow
 
-**Triggered by:** `/plan`
+**Triggered by:** `/fd-plan`
 
-The plan flow creates an execution-ready `PLAN.md` from the decisions in a confirmed `DISCUSS.md`. It starts with a guard check — if `DISCUSS.md` does not exist or is not confirmed, execution stops and the user is directed to run `/discuss` first.
+The plan flow creates an execution-ready `PLAN.md` from the decisions in a confirmed `DISCUSS.md`. It starts with a guard check — if `DISCUSS.md` does not exist or is not confirmed, execution stops and the user is directed to run `/fd-discuss` first.
 
 After loading context (`PROJECT.md`, `STATE.md`, `DISCUSS.md`), `@flowdeck-planner` creates a wave-structured `PLAN.md` where every task traces back to a `D-XX` decision. The draft plan is then handed to `@flowdeck-plan-checker`, which scores it for completeness, feasibility, and testability.
 
@@ -129,9 +129,9 @@ A FAIL verdict from `@flowdeck-plan-checker` returns the plan to `@flowdeck-plan
 
 ### plan-phase
 
-**Triggered by:** `/plan-phase [N]`
+**Triggered by:** `/fd-plan-phase [N]`
 
-A focused sub-flow for creating a plan for a specific numbered phase. Unlike `plan-flow`, which drives the full `/plan` command, `plan-phase` is a targeted invocation that takes a phase number as an argument and operates only on that phase's scope.
+A focused sub-flow for creating a plan for a specific numbered phase. Unlike `plan-flow`, which drives the full `/fd-plan` command, `plan-phase` is a targeted invocation that takes a phase number as an argument and operates only on that phase's scope.
 
 `@flowdeck-planner` is spawned with the phase's `REQUIREMENTS.md` (or `DISCUSS.md`), `ROADMAP.md`, and `PROJECT.md`. It produces `.planning/phases/phase-N/PLAN.md`. `@flowdeck-plan-checker` then reviews the plan and returns PASS or FAIL with specific recommendations. Results are presented by `@orchestrator`.
 
@@ -144,7 +144,7 @@ A focused sub-flow for creating a plan for a specific numbered phase. Unlike `pl
 
 ### execute-flow
 
-**Triggered by:** `/new-feature`
+**Triggered by:** `/fd-new-feature`
 
 The execute flow drives full feature delivery. A guard check verifies that `.planning/` and `.codebase/` exist and that `PLAN.md` is confirmed — if any check fails, execution stops with a specific message directing the user to the missing prerequisite.
 
@@ -180,7 +180,7 @@ A targeted sub-flow for executing a single numbered phase plan. Before delegatin
 
 ### fix-bug-flow
 
-**Triggered by:** `/fix-bug`
+**Triggered by:** `/fd-fix-bug`
 
 A systematic bug fix workflow that guarantees a regression test exists before any fix is applied. `@orchestrator` loads `STATE.md`, `ARCHITECTURE.md`, and `CONVENTIONS.md` to give all agents the project context they need.
 
@@ -219,7 +219,7 @@ The cardinal rule of this workflow: never suppress an error to make a test pass.
 
 ### review-code-flow
 
-**Triggered by:** `/review-code`
+**Triggered by:** `/fd-review-code`
 
 A parallel code review workflow that combines quality review, security checking, and test coverage verification simultaneously. `@orchestrator` determines the review scope — either from changed files (git diff) or an explicit scope argument.
 
@@ -237,7 +237,7 @@ A parallel code review workflow that combines quality review, security checking,
 
 ### deploy-check-flow
 
-**Triggered by:** `/deploy-check`
+**Triggered by:** `/fd-deploy-check`
 
 A comprehensive pre-deployment check suite that runs four independent checks simultaneously and produces a single GO/NO-GO decision. Any CRITICAL or HIGH finding from any check produces NO-GO.
 
@@ -275,7 +275,7 @@ A disciplined safe-refactoring workflow where the test suite must be green befor
 
 ### write-docs-flow
 
-**Triggered by:** `/write-docs`
+**Triggered by:** `/fd-write-docs`
 
 A documentation workflow that prioritizes accuracy over speed — every piece of documentation is verified against the actual code before it is finalized. The flow starts with exploration rather than writing.
 
@@ -292,7 +292,7 @@ A documentation workflow that prioritizes accuracy over speed — every piece of
 
 ### map-codebase-flow
 
-**Triggered by:** `/map-codebase`
+**Triggered by:** `/fd-map-codebase`
 
 Produces the six `.codebase/` documentation files in parallel using six `@mapper` instances, each assigned to one output file. Before running, `@orchestrator` checks whether `.codebase/` already exists and requires user confirmation before overwriting.
 
@@ -358,7 +358,7 @@ The standard wave structure: Wave 1 runs `@researcher` and `@code-explorer` simu
 
 ### multi-repo-flow
 
-**Triggered by:** `/multi-repo`
+**Triggered by:** `/fd-multi-repo`
 
 Orchestrates a feature or fix that spans multiple repositories in a microservice architecture. Ensures changes propagate in the correct dependency order, API contracts are agreed before implementation, and integration is verified end-to-end before any service ships to production.
 

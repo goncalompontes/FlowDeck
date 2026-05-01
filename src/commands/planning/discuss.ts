@@ -4,7 +4,7 @@ import { planningDir, statePath } from "../../tools/planning-state-lib"
 import { runImpactRadar } from "../../lib/impact-radar"
 
 export const discussCommand = {
-  name: "discuss",
+  name: "fd-discuss",
   description:
     "Extract requirements via @discusser Q&A — saves decisions to .planning/phases/phase-N/DISCUSS.md with D-XX numbering",
   async execute(context, args?: { topic?: string }) {

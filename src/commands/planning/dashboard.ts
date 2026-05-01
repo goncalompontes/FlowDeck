@@ -4,7 +4,7 @@ import path from "path"
 import { findOpenPort } from "../../dashboard/lib/port-finder"
 
 export const dashboardCommand = {
-  name: "dashboard",
+  name: "fd-dashboard",
   description: "Open project dashboard in browser — displays phase progress, milestones, and blockers",
   async execute(context, args?: { refresh?: boolean }) {
     const dir = context.directory ?? process.cwd()

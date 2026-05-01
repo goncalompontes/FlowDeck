@@ -42,7 +42,7 @@ const MODEL_PROFILES = {
 }
 
 export const settingsCommand = {
-  name: "settings",
+  name: "fd-settings",
   description: "Interactive configurator for agent models, profiles, and workflow toggles",
   async execute(context, args?: {
     profile?: "quality" | "balanced" | "budget"

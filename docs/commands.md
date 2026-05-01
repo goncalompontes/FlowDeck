@@ -6,35 +6,35 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 | Command | Arguments | Description |
 |---------|-----------|-------------|
-| `/new-project` | `[project-name]` | Initialize `.planning/` directory and project state files |
-| `/discuss` | `[phase-number]` | Structured Q&A session to capture decisions for a phase |
-| `/plan` | `[phase-number]` | Generate a detailed implementation plan from discussion output |
-| `/new-feature` | `[feature-description]` | Full feature implementation with parallel agents |
-| `/fix-bug` | `[bug-description\|issue-number]` | Debug, fix, and verify a bug with regression test |
-| `/review-code` | `[scope]` | Parallel code review and security audit |
-| `/deploy-check` | — | Pre-deploy gate: tests, review, CVE scan |
-| `/write-docs` | — | Explore public APIs and generate documentation |
-| `/map-codebase` | `[--full] [--update]` | Map codebase into structured `.codebase/` files |
-| `/progress` | — | Display current STATE.md and active plan (no agents) |
-| `/checkpoint` | — | Persist current state to STATE.md |
-| `/resume` | — | Reload STATE.md and PLAN.md context in a new session |
-| `/dashboard` | — | Project dashboard: phases, milestones, blockers |
-| `/roadmap` | — | View or update ROADMAP.md with phase statuses |
-| `/settings` | — | View or update FlowDeck model and workspace settings |
-| `/multi-repo` | `[--add\|--list\|--status\|--remove]` | Manage multi-repo configuration |
-| `/impact-radar` | `[--change] [--scope]` | Predict affected files, APIs, tests before editing |
-| `/blast-radius` | `[--change] [--depth]` | Show downstream consequences and hidden dependencies |
-| `/translate-intent` | `[--intent]` | Convert vague request into ranked concrete implementation options |
-| `/volatility-map` | `[--threshold] [--limit]` | Show unstable code zones by churn and hotfix frequency |
-| `/regression-predict` | `[--change] [--categories]` | Estimate likely regression categories for a change |
-| `/test-gap` | `[--change] [--scope]` | Identify weakly-tested areas in a proposed change |
-| `/review-route` | `[--files] [--change]` | Route risky patches to the right reviewer type |
+| `/fd-new-project` | `[project-name]` | Initialize `.planning/` directory and project state files |
+| `/fd-discuss` | `[phase-number]` | Structured Q&A session to capture decisions for a phase |
+| `/fd-plan` | `[phase-number]` | Generate a detailed implementation plan from discussion output |
+| `/fd-new-feature` | `[feature-description]` | Full feature implementation with parallel agents |
+| `/fd-fix-bug` | `[bug-description\|issue-number]` | Debug, fix, and verify a bug with regression test |
+| `/fd-review-code` | `[scope]` | Parallel code review and security audit |
+| `/fd-deploy-check` | — | Pre-deploy gate: tests, review, CVE scan |
+| `/fd-write-docs` | — | Explore public APIs and generate documentation |
+| `/fd-map-codebase` | `[--full] [--update]` | Map codebase into structured `.codebase/` files |
+| `/fd-progress` | — | Display current STATE.md and active plan (no agents) |
+| `/fd-checkpoint` | — | Persist current state to STATE.md |
+| `/fd-resume` | — | Reload STATE.md and PLAN.md context in a new session |
+| `/fd-dashboard` | — | Project dashboard: phases, milestones, blockers |
+| `/fd-roadmap` | — | View or update ROADMAP.md with phase statuses |
+| `/fd-settings` | — | View or update FlowDeck model and workspace settings |
+| `/fd-multi-repo` | `[--add\|--list\|--status\|--remove]` | Manage multi-repo configuration |
+| `/fd-impact-radar` | `[--change] [--scope]` | Predict affected files, APIs, tests before editing |
+| `/fd-blast-radius` | `[--change] [--depth]` | Show downstream consequences and hidden dependencies |
+| `/fd-translate-intent` | `[--intent]` | Convert vague request into ranked concrete implementation options |
+| `/fd-volatility-map` | `[--threshold] [--limit]` | Show unstable code zones by churn and hotfix frequency |
+| `/fd-regression-predict` | `[--change] [--categories]` | Estimate likely regression categories for a change |
+| `/fd-test-gap` | `[--change] [--scope]` | Identify weakly-tested areas in a proposed change |
+| `/fd-review-route` | `[--files] [--change]` | Route risky patches to the right reviewer type |
 
 ---
 
 ## Detailed Command Reference
 
-## /new-project
+## /fd-new-project
 
 **Description:** Bootstraps a new FlowDeck-managed project. Creates the `.planning/` directory and all required state files so subsequent commands have a place to read and write context.
 
@@ -51,17 +51,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/new-project my-api-service
+/fd-new-project my-api-service
 ```
 
 **What Next?**
-1. Run `/discuss 1` to begin structured discovery for Phase 1
-2. Run `/map-codebase` if this is an existing codebase you want indexed
-3. Run `/settings` to configure model assignments before proceeding
+1. Run `/fd-discuss 1` to begin structured discovery for Phase 1
+2. Run `/fd-map-codebase` if this is an existing codebase you want indexed
+3. Run `/fd-settings` to configure model assignments before proceeding
 
 ---
 
-## /discuss
+## /fd-discuss
 
 **Description:** Opens a structured Q&A session for a given phase. The `@discusser` agent asks targeted questions to surface requirements, constraints, and decisions, then saves everything to a phase file.
 
@@ -77,17 +77,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/discuss 1
+/fd-discuss 1
 ```
 
 **What Next?**
-1. Run `/plan 1` to generate a detailed implementation plan from this discussion
-2. Run `/discuss 1` again to add more decisions if you missed something
-3. Run `/progress` to review the current project state
+1. Run `/fd-plan 1` to generate a detailed implementation plan from this discussion
+2. Run `/fd-discuss 1` again to add more decisions if you missed something
+3. Run `/fd-progress` to review the current project state
 
 ---
 
-## /plan
+## /fd-plan
 
 **Description:** Reads the discussion output for a phase and produces a detailed, step-by-step implementation plan. Requires explicit confirmation before finalizing.
 
@@ -104,17 +104,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/plan 1
+/fd-plan 1
 ```
 
 **What Next?**
-1. Run `/new-feature "feature description"` to implement the first item in the plan
-2. Run `/progress` to see the full plan summary
-3. Run `/plan 1` again to regenerate the plan if requirements changed
+1. Run `/fd-new-feature "feature description"` to implement the first item in the plan
+2. Run `/fd-progress` to see the full plan summary
+3. Run `/fd-plan 1` again to regenerate the plan if requirements changed
 
 ---
 
-## /new-feature
+## /fd-new-feature
 
 **Description:** Implements a new feature end-to-end using an orchestrated pipeline of parallel agents. Reads the active PLAN.md for context before starting.
 
@@ -134,18 +134,18 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/new-feature "user authentication with JWT and refresh tokens"
+/fd-new-feature "user authentication with JWT and refresh tokens"
 ```
 
 **What Next?**
-1. Run `/review-code src/auth/` to do an additional focused review
-2. Run `/fix-bug` if any issues were surfaced during implementation
-3. Run `/checkpoint` to save state before moving on
-4. Run `/new-feature` again for the next planned feature
+1. Run `/fd-review-code src/auth/` to do an additional focused review
+2. Run `/fd-fix-bug` if any issues were surfaced during implementation
+3. Run `/fd-checkpoint` to save state before moving on
+4. Run `/fd-new-feature` again for the next planned feature
 
 ---
 
-## /fix-bug
+## /fd-fix-bug
 
 **Description:** Diagnoses and fixes a bug through a focused pipeline: scope analysis, mini-plan, code fix, regression test, and reviewer sign-off.
 
@@ -162,19 +162,19 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/fix-bug "user sessions expire immediately after login"
-/fix-bug 412
+/fd-fix-bug "user sessions expire immediately after login"
+/fd-fix-bug 412
 ```
 
 **What Next?**
-1. Run `/review-code` on the changed files for a full quality pass
-2. Run `/deploy-check` if this is a hotfix going to production
-3. Run `/checkpoint` to save state
-4. Run `/progress` to see remaining open issues
+1. Run `/fd-review-code` on the changed files for a full quality pass
+2. Run `/fd-deploy-check` if this is a hotfix going to production
+3. Run `/fd-checkpoint` to save state
+4. Run `/fd-progress` to see remaining open issues
 
 ---
 
-## /review-code
+## /fd-review-code
 
 **Description:** Runs a parallel code review and security audit on the specified scope, then aggregates findings into a tiered report.
 
@@ -193,20 +193,20 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/review-code src/payments/
-/review-code staged
-/review-code src/api/handlers/user.ts
+/fd-review-code src/payments/
+/fd-review-code staged
+/fd-review-code src/api/handlers/user.ts
 ```
 
 **What Next?**
-1. Address **Critical** findings first, then re-run `/review-code` on the changed files
-2. Run `/fix-bug` for any defects surfaced in the review
-3. Run `/deploy-check` once all criticals are resolved
-4. Run `/checkpoint` to save progress
+1. Address **Critical** findings first, then re-run `/fd-review-code` on the changed files
+2. Run `/fd-fix-bug` for any defects surfaced in the review
+3. Run `/fd-deploy-check` once all criticals are resolved
+4. Run `/fd-checkpoint` to save progress
 
 ---
 
-## /deploy-check
+## /fd-deploy-check
 
 **Description:** Runs a full pre-deployment gate. All checks must pass before the orchestrator issues a go/no-go decision. Blocks deploy if any check fails.
 
@@ -220,22 +220,22 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 2. `@orchestrator` collects results from all three
 3. If all pass: issues **GO** decision and prints a deploy summary
 4. If any fail: issues **NO-GO** decision with specific failure details and a remediation list
-5. Saves the decision report to `.planning/deploy-checks/DEPLOY-<timestamp>.md`
+5. Saves the decision report to `.planning/fd-deploy-checks/DEPLOY-<timestamp>.md`
 
 **Example:**
 ```
-/deploy-check
+/fd-deploy-check
 ```
 
 **What Next?**
 1. If **GO**: proceed with your deployment pipeline
-2. If **NO-GO**: address each listed failure, then re-run `/deploy-check`
-3. Run `/fix-bug` for any test failures surfaced
-4. Run `/checkpoint` after a successful deploy check
+2. If **NO-GO**: address each listed failure, then re-run `/fd-deploy-check`
+3. Run `/fd-fix-bug` for any test failures surfaced
+4. Run `/fd-checkpoint` after a successful deploy check
 
 ---
 
-## /write-docs
+## /fd-write-docs
 
 **Description:** Explores all public APIs in the codebase and generates documentation. A `@reviewer` then checks the draft for accuracy against the actual code.
 
@@ -250,18 +250,18 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/write-docs
+/fd-write-docs
 ```
 
 **What Next?**
 1. Review the generated docs and edit sections that need domain context
-2. Run `/write-docs` again after adding new public APIs
-3. Run `/review-code docs/` if you want a quality pass on the written docs
-4. Run `/checkpoint` to save state
+2. Run `/fd-write-docs` again after adding new public APIs
+3. Run `/fd-review-code docs/` if you want a quality pass on the written docs
+4. Run `/fd-checkpoint` to save state
 
 ---
 
-## /map-codebase
+## /fd-map-codebase
 
 **Description:** Builds a structured map of the codebase into `.codebase/` files. Essential before starting work on an unfamiliar or large project.
 
@@ -281,19 +281,19 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/map-codebase
-/map-codebase --full
-/map-codebase --update
+/fd-map-codebase
+/fd-map-codebase --full
+/fd-map-codebase --update
 ```
 
 **What Next?**
-1. Run `/discuss 1` now that the AI has full codebase context
+1. Run `/fd-discuss 1` now that the AI has full codebase context
 2. Review `.codebase/CONVENTIONS.md` and add any corrections before proceeding
-3. Run `/map-codebase --update` after significant refactors to keep the map current
+3. Run `/fd-map-codebase --update` after significant refactors to keep the map current
 
 ---
 
-## /progress
+## /fd-progress
 
 **Description:** Displays a snapshot of the current project state. Reads directly from state files — no agents are invoked.
 
@@ -307,17 +307,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/progress
+/fd-progress
 ```
 
 **What Next?**
 1. Run the next command indicated by the active plan
-2. Run `/dashboard` for a more visual phase-by-phase view
-3. Run `/roadmap` to see the full project timeline
+2. Run `/fd-dashboard` for a more visual phase-by-phase view
+3. Run `/fd-roadmap` to see the full project timeline
 
 ---
 
-## /checkpoint
+## /fd-checkpoint
 
 **Description:** Persists the current session state to `.planning/STATE.md`. Run this before closing an OpenCode session so nothing is lost.
 
@@ -330,17 +330,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/checkpoint
+/fd-checkpoint
 ```
 
 **What Next?**
 1. Close and reopen your OpenCode session
-2. Run `/resume` in the new session to reload context
-3. Run `/progress` to verify state was saved correctly
+2. Run `/fd-resume` in the new session to reload context
+3. Run `/fd-progress` to verify state was saved correctly
 
 ---
 
-## /resume
+## /fd-resume
 
 **Description:** Reloads project context at the start of a new OpenCode session. Reads STATE.md and the active PLAN.md so you can continue where you left off.
 
@@ -354,17 +354,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/resume
+/fd-resume
 ```
 
 **What Next?**
 1. Run the next task from the active plan
-2. Run `/progress` for a full status view
-3. Run `/discuss` or `/plan` if context indicates a phase is not yet planned
+2. Run `/fd-progress` for a full status view
+3. Run `/fd-discuss` or `/fd-plan` if context indicates a phase is not yet planned
 
 ---
 
-## /dashboard
+## /fd-dashboard
 
 **Description:** Renders a project dashboard showing phase-by-phase progress, milestone status, and any active blockers.
 
@@ -381,17 +381,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/dashboard
+/fd-dashboard
 ```
 
 **What Next?**
-1. Run `/roadmap` to update phase statuses or add milestones
-2. Run `/progress` for a task-level view
-3. Run `/discuss` or `/plan` for phases shown as blocked
+1. Run `/fd-roadmap` to update phase statuses or add milestones
+2. Run `/fd-progress` for a task-level view
+3. Run `/fd-discuss` or `/fd-plan` for phases shown as blocked
 
 ---
 
-## /roadmap
+## /fd-roadmap
 
 **Description:** View or update the project roadmap. Shows all phases with their current statuses and lets you mark phases as complete or add new ones.
 
@@ -401,21 +401,21 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 1. Reads and displays `.planning/ROADMAP.md` with phase names, statuses, and target dates
 2. Prompts you to update any phase status or add new phases
 3. Saves changes back to `.planning/ROADMAP.md`
-4. Reflects changes in subsequent `/dashboard` calls
+4. Reflects changes in subsequent `/fd-dashboard` calls
 
 **Example:**
 ```
-/roadmap
+/fd-roadmap
 ```
 
 **What Next?**
-1. Run `/discuss N` to begin work on the next planned phase
-2. Run `/dashboard` to see the updated roadmap in context
-3. Run `/checkpoint` to save state after roadmap updates
+1. Run `/fd-discuss N` to begin work on the next planned phase
+2. Run `/fd-dashboard` to see the updated roadmap in context
+3. Run `/fd-checkpoint` to save state after roadmap updates
 
 ---
 
-## /settings
+## /fd-settings
 
 **Description:** View or update FlowDeck configuration: model assignments per agent, guard enforcement, and workspace mode.
 
@@ -431,17 +431,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/settings
+/fd-settings
 ```
 
 **What Next?**
-1. Run `/multi-repo --list` to see registered repos if workspace mode is `multi`
-2. Run `/progress` to confirm settings are in effect
-3. Run `/new-feature` to use updated model assignments
+1. Run `/fd-multi-repo --list` to see registered repos if workspace mode is `multi`
+2. Run `/fd-progress` to confirm settings are in effect
+3. Run `/fd-new-feature` to use updated model assignments
 
 ---
 
-## /multi-repo
+## /fd-multi-repo
 
 **Description:** Manages multi-repo configuration in `.planning/config.json`. Register, list, check status of, or remove service repositories for cross-repo coordination.
 
@@ -459,17 +459,17 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 
 **Example:**
 ```
-/multi-repo --add ../user-service upstream-api
-/multi-repo --add ../order-service consumer
-/multi-repo --list
-/multi-repo --status
-/multi-repo --remove notification-service
+/fd-multi-repo --add ../user-service upstream-api
+/fd-multi-repo --add ../order-service consumer
+/fd-multi-repo --list
+/fd-multi-repo --status
+/fd-multi-repo --remove notification-service
 ```
 
 **What Next?**
 1. Run `@multi-repo-coordinator` with a cross-cutting change description to begin coordinated work
-2. Run `/multi-repo --status` before starting any cross-repo feature to check for diverged branches
-3. Run `/settings` to confirm workspace mode is set to `multi`
+2. Run `/fd-multi-repo --status` before starting any cross-repo feature to check for diverged branches
+3. Run `/fd-settings` to confirm workspace mode is set to `multi`
 
 ---
 

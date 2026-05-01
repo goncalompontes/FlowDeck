@@ -32,7 +32,7 @@ function extractSignaturesFromFile(filePath: string): string[] {
 }
 
 export const mapCodebaseCommand = {
-  name: "map-codebase",
+  name: "fd-map-codebase",
   description: "Parallel analysis agents → .codebase/ docs (STACK, ARCHITECTURE, STRUCTURE, CONVENTIONS, TESTING, CONCERNS). Use --incremental to process only changed files.",
   async execute(context, args?: { incremental?: boolean; yes?: boolean }) {
     const dir = context.directory ?? process.cwd()

@@ -2,7 +2,7 @@ import { existsSync } from "fs"
 import { statePath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const translateIntentCommand = {
-  name: "translate-intent",
+  name: "fd-translate-intent",
   description: "Intent-to-Change Translator — converts vague requests like 'make checkout faster' into concrete, ranked implementation options with tradeoffs before coding starts",
   async execute(context, args?: { intent?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

@@ -3,7 +3,7 @@ import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const blastRadiusCommand = {
-  name: "blast-radius",
+  name: "fd-blast-radius",
   description: "Blast Radius Preview — show likely downstream consequences of a proposed change including hidden dependencies and fragile integration points",
   async execute(context, args?: { change?: string; depth?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

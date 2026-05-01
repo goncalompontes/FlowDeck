@@ -14,15 +14,15 @@ Load the FlowDeck discuss workflow for the current (or specified) phase.
 
 **Output:** A DISCUSS.md file with locked decisions that guide the planner and coder.
 
-**Next step after this:** Run `/plan` to create the implementation plan.
+**Next step after this:** Run `/fd-plan` to create the implementation plan.
 
 ## What Next?
 
 After discussion completes, choose your next step:
 
-1. **Create implementation plan** → `/plan [phase-number]`
-2. **Continue discussion** → `/discuss [phase-number]`
-3. **Review existing work** → `/review-code`
-4. **Check project dashboard** → `/dashboard`
+1. **Create implementation plan** → `/fd-plan [phase-number]`
+2. **Continue discussion** → `/fd-discuss [phase-number]`
+3. **Review existing work** → `/fd-review-code`
+4. **Check project dashboard** → `/fd-dashboard`
 
 Type the number or the command to proceed.

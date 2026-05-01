@@ -106,7 +106,7 @@ To activate rules, reference them by their path in the `instructions` array. Exa
 
 ## Project Config (.planning/config.json)
 
-Each FlowDeck project stores its settings in `.planning/config.json`. This file is created by `/new-project` and updated by `/settings`.
+Each FlowDeck project stores its settings in `.planning/config.json`. This file is created by `/fd-new-project` and updated by `/fd-settings`.
 
 ### Full schema
 
@@ -133,10 +133,10 @@ Each FlowDeck project stores its settings in `.planning/config.json`. This file 
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `project_name` | string | Human-readable name shown in `/dashboard` and state files |
+| `project_name` | string | Human-readable name shown in `/fd-dashboard` and state files |
 | `workspace_mode` | `"single"` \| `"multi"` | `"single"` for one repo; `"multi"` enables the multi-repo coordinator |
 | `active_phase` | integer | The current phase number. `@orchestrator` reads this to determine which plan to execute |
-| `plan_confirmed` | boolean | Set to `true` when you type `CONFIRMED` after `/plan`. Guards against unreviewed execution |
+| `plan_confirmed` | boolean | Set to `true` when you type `CONFIRMED` after `/fd-plan`. Guards against unreviewed execution |
 | `enforce_guardrails` | boolean | When `true`, the `@flowdeck-plan-checker` must approve a plan before `@flowdeck-executor` runs it |
 | `sub_repos` | array | List of additional repositories involved in this project (multi-repo mode only) |
 | `sub_repos[].name` | string | Short identifier used in cross-repo task delegation |
@@ -152,10 +152,10 @@ Each FlowDeck project stores its settings in `.planning/config.json`. This file 
 To view or modify project configuration interactively, run inside an OpenCode session:
 
 ```
-/settings
+/fd-settings
 ```
 
-`/settings` displays the current values from `.planning/config.json`, lists active model assignments for each agent, and presents options to:
+`/fd-settings` displays the current values from `.planning/config.json`, lists active model assignments for each agent, and presents options to:
 
 - Switch `workspace_mode` between `single` and `multi`
 - Change the `active_phase`

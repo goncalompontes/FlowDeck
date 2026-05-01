@@ -113,19 +113,19 @@ If Critical findings exist, the flow returns to Wave 3 (`@coder`) for remediatio
 
 ## Triggering Parallel Execution
 
-### Automatic (via `/new-feature`)
+### Automatic (via `/fd-new-feature`)
 
 ```
-/new-feature "payment integration with Stripe"
+/fd-new-feature "payment integration with Stripe"
 ```
 
-The `@orchestrator` estimates scope for every `/new-feature` call. If the feature exceeds approximately 30 minutes of estimated work, `@orchestrator` automatically hands off to `@parallel-coordinator`, which builds the WAVE TABLE and begins Wave 1.
+The `@orchestrator` estimates scope for every `/fd-new-feature` call. If the feature exceeds approximately 30 minutes of estimated work, `@orchestrator` automatically hands off to `@parallel-coordinator`, which builds the WAVE TABLE and begins Wave 1.
 
 You do not need to specify parallel execution — it is selected based on scope.
 
 ### Manual (direct invocation)
 
-For work that does not go through `/new-feature`, invoke `@parallel-coordinator` directly:
+For work that does not go through `/fd-new-feature`, invoke `@parallel-coordinator` directly:
 
 ```
 @parallel-coordinator I need to implement the notification system.
@@ -172,7 +172,7 @@ Use the run-parallel tool to run @reviewer on src/payments/ and
 - You want to parallelize review and audit on a specific directory after manual edits
 - You are running a one-off investigation, not a full feature pipeline
 
-For full feature work, prefer `/new-feature` or direct `@parallel-coordinator` invocation over the `run-parallel` tool.
+For full feature work, prefer `/fd-new-feature` or direct `@parallel-coordinator` invocation over the `run-parallel` tool.
 
 ---
 

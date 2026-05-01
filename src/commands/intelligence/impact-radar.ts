@@ -4,7 +4,7 @@ import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tool
 import { scorePatch } from "../../hooks/patch-trust"
 
 export const impactRadarCommand = {
-  name: "impact-radar",
+  name: "fd-impact-radar",
   description: "Change Impact Radar — predict which files, modules, APIs, tests, and DB paths are likely affected before the AI edits anything",
   async execute(context, args?: { change?: string; scope?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

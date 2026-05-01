@@ -95,7 +95,7 @@ function renderStatusTable(repos: SubRepo[], repoStates: Record<string, Record<s
 }
 
 export const statusCommand = {
-  name: "workspace status",
+  name: "fd-workspace status",
   description: "Display workspace overview: all repos, their current phase, status, and progress",
   async execute(context, args?: { json?: boolean }) {
     const dir = context.directory ?? process.cwd()
@@ -142,7 +142,7 @@ export const statusCommand = {
 }
 
 export const syncCommand = {
-  name: "workspace sync",
+  name: "fd-workspace sync",
   description: "Sync workspace root STATE.md with all sub-repo states (shared mode)",
   async execute(context) {
     const dir = context.directory ?? process.cwd()
@@ -224,7 +224,7 @@ export const syncCommand = {
 }
 
 export const switchCommand = {
-  name: "workspace switch",
+  name: "fd-workspace switch",
   description: "Switch current active repo in workspace context",
   async execute(context, args?: { repo?: string }) {
     const dir = context.directory ?? process.cwd()
@@ -271,7 +271,7 @@ export const switchCommand = {
 }
 
 export const addCommand = {
-  name: "workspace add",
+  name: "fd-workspace add",
   description: "Add a repository path to workspace sub_repos",
   async execute(context, args?: { path?: string }) {
     const dir = context.directory ?? process.cwd()
@@ -318,7 +318,7 @@ export const addCommand = {
 }
 
 export const removeCommand = {
-  name: "workspace remove",
+  name: "fd-workspace remove",
   description: "Remove a repository from workspace sub_repos (by repo name, not path)",
   async execute(context, args?: { repo?: string }) {
     const dir = context.directory ?? process.cwd()
@@ -366,7 +366,7 @@ export const removeCommand = {
 }
 
 export const defaultCommand = {
-  name: "workspace",
+  name: "fd-workspace",
   description: "Workspace management commands (status, sync, switch, add, remove)",
   async execute(context, args?: { subcommand?: string }) {
     return statusCommand.execute(context, args)

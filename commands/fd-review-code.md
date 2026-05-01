@@ -23,7 +23,7 @@ Run a comprehensive parallel code review.
 
 ## What Next?
 
-1. **Fix critical issues found** → `/fix-bug [issue description]`
-2. **Deploy check** → `/deploy-check`
-3. **Update documentation** → `/write-docs`
-4. **Check project progress** → `/progress`
+1. **Fix critical issues found** → `/fd-fix-bug [issue description]`
+2. **Deploy check** → `/fd-deploy-check`
+3. **Update documentation** → `/fd-write-docs`
+4. **Check project progress** → `/fd-progress`

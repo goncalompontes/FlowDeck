@@ -2,7 +2,7 @@ import { existsSync } from "fs"
 import { statePath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const deployCheckCommand = {
-  name: "deploy-check",
+  name: "fd-deploy-check",
   description: "Parallel tester + reviewer + researcher CVE check — orchestrator go/no-go decision",
   async execute(context, args?: { json?: boolean }) {
     const dir = context.directory ?? process.cwd()

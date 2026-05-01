@@ -28,7 +28,7 @@ function routeReview(filePaths: string[], trustVerdict: TrustVerdict): ReviewerT
 }
 
 export const reviewRouteCommand = {
-  name: "review-route",
+  name: "fd-review-route",
   description: "Human Review Routing — route risky patches to the right reviewer type (security, backend, infra, domain-owner) based on change nature and patch trust score",
   async execute(context, args?: { files?: string; change?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

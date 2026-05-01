@@ -18,7 +18,7 @@ Systematically debug and fix a bug using FlowDeck's structured approach.
 
 ## What Next?
 
-1. **Run code review** → `/review-code`
-2. **Check for more bugs** → `/fix-bug [next-issue]`
-3. **Update documentation** → `/write-docs`
-4. **Deploy check** → `/deploy-check`
+1. **Run code review** → `/fd-review-code`
+2. **Check for more bugs** → `/fd-fix-bug [next-issue]`
+3. **Update documentation** → `/fd-write-docs`
+4. **Deploy check** → `/fd-deploy-check`

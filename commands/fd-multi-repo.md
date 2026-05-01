@@ -37,7 +37,7 @@ Multi-Repo Registry (.planning/config.json)
   shared-types         ../shared-types        shared-lib            node+typescript   platform
   api-gateway          ../api-gateway         gateway               nginx+lua         infra
 
-4 repos registered. Run /multi-repo --status to check path health.
+4 repos registered. Run /fd-multi-repo --status to check path health.
 ```
 
 **Example output (--status):**
@@ -58,6 +58,6 @@ Warning: order-service and shared-types have no .planning/ — cross-repo planni
 
 **What Next?**
 
-- `/discuss` — discuss a change that spans multiple repos before planning it
-- `/new-feature` — plan and execute a feature; use with multi-repo context loaded
-- `/dashboard` — view progress across all registered repos
+- `/fd-discuss` — discuss a change that spans multiple repos before planning it
+- `/fd-new-feature` — plan and execute a feature; use with multi-repo context loaded
+- `/fd-dashboard` — view progress across all registered repos

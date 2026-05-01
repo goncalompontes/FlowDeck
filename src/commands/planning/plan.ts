@@ -38,7 +38,7 @@ function buildImpactRadarSection(dir: string, changeText: string): string {
 }
 
 export const planCommand = {
-  name: "plan",
+  name: "fd-plan",
   description: "Create detailed implementation plan from DISCUSS.md decisions — save PLAN.md, update STATE.md, require CONFIRM before execution",
   async execute(context, args?: { phase?: string; confirm?: boolean; json?: boolean; yes?: boolean }) {
     const dir = context.directory ?? process.cwd()

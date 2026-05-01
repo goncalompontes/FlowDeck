@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, phasePlanPath, resultPath, parseState, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const progressCommand = {
-  name: "progress",
+  name: "fd-progress",
   description: "Display STATE.md, active PLAN.md, and recent RESULT.md files",
   async execute(context, args?: { json?: boolean }) {
     const dir = context.directory ?? process.cwd()

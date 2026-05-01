@@ -4,7 +4,7 @@ import { statePath, planningDir, phasePlanPath, timestamp, parseState } from "..
 import { confirmPrompt, skipResponse } from "../../lib/confirmation"
 
 export const resumeCommand = {
-  name: "resume",
+  name: "fd-resume",
   description: "Reload STATE.md + last PLAN.md + DISCUSS.md — brief user, PAUSE for confirmation, then continue from where stopped",
   async execute(context, args?: { confirm?: boolean; json?: boolean; yes?: boolean }) {
     const dir = context.directory ?? process.cwd()

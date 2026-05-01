@@ -21,13 +21,13 @@ Create a step-by-step implementation plan for the current (or specified) phase.
 ...
 ```
 
-**Next step:** Run `/new-feature` to execute the confirmed plan.
+**Next step:** Run `/fd-new-feature` to execute the confirmed plan.
 
 ## What Next?
 
 After plan is confirmed, choose your next step:
 
-1. **Start feature implementation** → `/new-feature [description]`
-2. **Revisit discussion** → `/discuss [phase-number]`
-3. **View progress** → `/progress`
-4. **Check dashboard** → `/dashboard`
+1. **Start feature implementation** → `/fd-new-feature [description]`
+2. **Revisit discussion** → `/fd-discuss [phase-number]`
+3. **View progress** → `/fd-progress`
+4. **Check dashboard** → `/fd-dashboard`

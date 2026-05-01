@@ -263,7 +263,7 @@ The flowdeck planner creates execution-ready PLAN.md files with wave-structured 
                   Save to .planning/phases/phase-1/PLAN.md.
 ```
 
-**Works with:** `@flowdeck-plan-checker` (reviews the plan this agent creates), `@flowdeck-executor` (runs the plan), `@orchestrator` (triggers this agent via the `/plan` command)
+**Works with:** `@flowdeck-plan-checker` (reviews the plan this agent creates), `@flowdeck-executor` (runs the plan), `@orchestrator` (triggers this agent via the `/fd-plan` command)
 
 ---
 
@@ -319,7 +319,7 @@ The orchestrator coordinates multi-agent execution for feature delivery. At star
 **Model:** `anthropic/claude-sonnet-4-5`
 
 **Best for:**
-- Running `/new-feature` to drive an end-to-end feature delivery cycle
+- Running `/fd-new-feature` to drive an end-to-end feature delivery cycle
 - Enforcing the discuss → plan → execute → review phase state machine
 - Coordinating error recovery when a specialist agent fails mid-execution
 - Tracking plan progress and updating STATE.md after each step

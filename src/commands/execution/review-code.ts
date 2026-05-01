@@ -3,7 +3,7 @@ import { statePath, planningDir, timestamp, readPlanningState } from "../../tool
 import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
 
 export const reviewCodeCommand = {
-  name: "review-code",
+  name: "fd-review-code",
   description: "Parallel reviewer + researcher + tester — aggregates into critical/major/minor report",
   async execute(context, args?: { scope?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

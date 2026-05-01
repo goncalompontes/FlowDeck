@@ -2,7 +2,7 @@ import { existsSync } from "fs"
 import { statePath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const writeDocsCommand = {
-  name: "write-docs",
+  name: "fd-write-docs",
   description: "Explore public APIs — writer drafts — reviewer accuracy check — writer final",
   async execute(context, args?: { scope?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()

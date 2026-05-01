@@ -16,7 +16,7 @@ const REGRESSION_CATEGORIES = [
 ]
 
 export const regressionPredictCommand = {
-  name: "regression-predict",
+  name: "fd-regression-predict",
   description: "Regression Prediction — estimate the most likely regression categories (performance, auth, schema, UI states, async flows) for a proposed change",
   async execute(context, args?: { change?: string; files?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
