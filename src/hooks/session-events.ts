@@ -18,7 +18,12 @@ export async function sessionEventsHook(
 
   // Ensure log directory exists
   if (!existsSync(logDir)) {
-    mkdirSync(logDir, { recursive: true })
+    try {
+      mkdirSync(logDir, { recursive: true })
+    } catch (err) {
+      process.stdout.write(`[flowdeck] ERROR: Could not create log directory: ${err instanceof Error ? err.message : String(err)}\n`)
+      return
+    }
   }
 
   const phase = getPhase(ctx.directory)

@@ -3,9 +3,9 @@ import type { Plugin, PluginModule } from "@opencode-ai/plugin"
 import { planningStateTool } from "./tools/planning-state"
 import { codebaseStateTool } from "./tools/codebase-state"
 import { workspaceStateTool } from "./tools/workspace-state"
-import { runParallelTool } from "./tools/run-parallel"
-import { runPipelineTool } from "./tools/run-pipeline"
-import { delegateTool } from "./tools/delegate"
+import { createRunParallelTool } from "./tools/run-parallel"
+import { createRunPipelineTool } from "./tools/run-pipeline"
+import { createDelegateTool } from "./tools/delegate"
 import { repoMemoryTool } from "./tools/repo-memory"
 import { failureReplayTool } from "./tools/failure-replay"
 import { decisionTraceTool } from "./tools/decision-trace"
@@ -54,13 +54,20 @@ function parseArgs(rawArgs: string): Record<string, unknown> {
   if (!rawArgs || rawArgs.trim() === "") return {}
   try {
     return JSON.parse(rawArgs)
-  } catch {
+  } catch (err) {
+    // Log warning but continue with fallback
+    console.warn(`[flowdeck] Failed to parse command arguments as JSON: ${err instanceof Error ? err.message : String(err)}`)
     return { input: rawArgs }
   }
 }
 
 const server: Plugin = async (input, _options) => {
-  const { directory } = input
+  const { directory, client } = input
+
+  // Instantiate runtime-integrated tools that need the OpenCode client
+  const runParallelTool = createRunParallelTool(client)
+  const runPipelineTool = createRunPipelineTool(client)
+  const delegateTool = createDelegateTool(client)
 
   const allCommands = [
     newProjectCommand,

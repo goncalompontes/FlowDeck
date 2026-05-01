@@ -87,6 +87,11 @@ export function routeModel(
   }
 }
 
+/**
+ * Build agent configuration array for multi-agent orchestration.
+ * Requires OpenCode runtime integration to be functional.
+ * @deprecated Stub - requires OpenCode client.session.create() API
+ */
 export function buildAgentConfig(
   dir: string,
   agents: Array<{ name: string; task_type: TaskType; risk_score?: number }>

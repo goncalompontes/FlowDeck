@@ -1,0 +1,280 @@
+import { describe, it, expect, vi, beforeEach } from "vitest"
+import { createRunParallelTool } from "./run-parallel"
+import { createDelegateTool } from "./delegate"
+import { createRunPipelineTool } from "./run-pipeline"
+
+// Minimal mock for OpencodeClient
+function makeClient(overrides: Partial<{
+  createResult: any
+  promptResult: any
+  abortResult: any
+}> = {}) {
+  const createResult = overrides.createResult ?? { data: { id: "child-session-1" }, error: null }
+  const promptResult = overrides.promptResult ?? {
+    data: {
+      info: { id: "msg-1", role: "assistant", error: undefined },
+      parts: [{ type: "text", text: "Agent output here" }],
+    },
+    error: null,
+  }
+
+  return {
+    session: {
+      create: vi.fn(async () => createResult),
+      prompt: vi.fn(async () => promptResult),
+      abort: vi.fn(async () => ({ data: undefined, error: null })),
+    },
+  }
+}
+
+function makeContext(overrides: Partial<{ sessionID: string; directory: string }> = {}) {
+  const abortController = new AbortController()
+  return {
+    sessionID: overrides.sessionID ?? "parent-session",
+    messageID: "msg-0",
+    agent: "test-agent",
+    directory: overrides.directory ?? "/test/dir",
+    worktree: "/test/dir",
+    abort: abortController.signal,
+    metadata: vi.fn(),
+    ask: vi.fn(),
+    _abort: abortController,
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// run_agents_parallel
+// ──────────────────────────────────────────────────────────
+describe("createRunParallelTool", () => {
+  it("creates a child session per task and returns combined results", async () => {
+    const client = makeClient()
+    // Return different session IDs for each call
+    client.session.create
+      .mockResolvedValueOnce({ data: { id: "child-1" }, error: null })
+      .mockResolvedValueOnce({ data: { id: "child-2" }, error: null })
+    client.session.prompt
+      .mockResolvedValueOnce({ data: { info: {}, parts: [{ type: "text", text: "Output A" }] }, error: null })
+      .mockResolvedValueOnce({ data: { info: {}, parts: [{ type: "text", text: "Output B" }] }, error: null })
+
+    const tool = createRunParallelTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { tasks: [{ agent: "planner", prompt: "Plan X" }, { agent: "coder", prompt: "Code Y" }] },
+      ctx as any,
+    )) as string)
+
+    expect(client.session.create).toHaveBeenCalledTimes(2)
+    expect(result.results).toHaveLength(2)
+    expect(result.results[0].success).toBe(true)
+    expect(result.results[0].session_id).toBe("child-1")
+    expect(result.results[1].session_id).toBe("child-2")
+    expect(result.failures).toHaveLength(0)
+  })
+
+  it("returns failure when session.create fails", async () => {
+    const client = makeClient({ createResult: { data: null, error: { detail: "quota exceeded" } } })
+    const tool = createRunParallelTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { tasks: [{ agent: "coder", prompt: "Do something" }] },
+      ctx as any,
+    )) as string)
+
+    expect(result.results[0].success).toBe(false)
+    expect(result.results[0].error).toContain("quota exceeded")
+    expect(result.failures).toContain("coder")
+  })
+
+  it("returns failure when session.prompt returns transport error", async () => {
+    const client = makeClient({ promptResult: { data: null, error: { detail: "model unavailable" } } })
+    const tool = createRunParallelTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { tasks: [{ agent: "coder", prompt: "Do something" }] },
+      ctx as any,
+    )) as string)
+
+    expect(result.results[0].success).toBe(false)
+    expect(result.results[0].error).toContain("model unavailable")
+  })
+
+  it("returns failure when agent message info.error is set", async () => {
+    const client = makeClient({
+      promptResult: {
+        data: { info: { error: { type: "MessageAbortedError", message: "context window" } }, parts: [] },
+        error: null,
+      },
+    })
+    const tool = createRunParallelTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { tasks: [{ agent: "coder", prompt: "Do something" }] },
+      ctx as any,
+    )) as string)
+
+    expect(result.results[0].success).toBe(false)
+    expect(result.results[0].error).toContain("Agent error")
+  })
+
+  it("aborts child sessions when parent abort fires", async () => {
+    // Make prompt block until abort
+    let resolvePrompt!: (v: any) => void
+    const client = makeClient()
+    client.session.create.mockResolvedValue({ data: { id: "child-abc" }, error: null })
+    client.session.prompt.mockReturnValue(new Promise(r => { resolvePrompt = r }))
+
+    const tool = createRunParallelTool(client as any)
+    const ctx = makeContext()
+    const runPromise = tool.execute(
+      { tasks: [{ agent: "coder", prompt: "Long task" }] },
+      ctx as any,
+    )
+
+    // Yield to microtasks so session.create resolves and childSessionIds is populated
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // Now abort: the child session ID is registered
+    ctx._abort.abort()
+
+    // Allow prompt to resolve so the test doesn't hang
+    resolvePrompt({ data: { info: {}, parts: [] }, error: null })
+    await runPromise
+
+    expect(client.session.abort).toHaveBeenCalledWith(
+      expect.objectContaining({ path: { id: "child-abc" } }),
+    )
+  })
+})
+
+// ──────────────────────────────────────────────────────────
+// delegate_to_agent
+// ──────────────────────────────────────────────────────────
+describe("createDelegateTool", () => {
+  it("creates one session and returns agent output", async () => {
+    const client = makeClient()
+    const tool = createDelegateTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { agent: "reviewer", prompt: "Review this code", context: "PR diff here" },
+      ctx as any,
+    )) as string)
+
+    expect(client.session.create).toHaveBeenCalledTimes(1)
+    expect(client.session.prompt).toHaveBeenCalledTimes(1)
+    expect(result.success).toBe(true)
+    expect(result.output).toBe("Agent output here")
+    expect(result.session_id).toBe("child-session-1")
+  })
+
+  it("prepends context to prompt when provided", async () => {
+    const client = makeClient()
+    const tool = createDelegateTool(client as any)
+    const ctx = makeContext()
+    await tool.execute({ agent: "reviewer", prompt: "Review", context: "ctx-data" }, ctx as any)
+
+    const promptBody = (client.session.prompt.mock.calls as any)[0][0].body
+    expect(promptBody.parts[0].text).toContain("ctx-data")
+    expect(promptBody.parts[0].text).toContain("Review")
+  })
+
+  it("propagates agent-level error", async () => {
+    const client = makeClient({
+      promptResult: {
+        data: { info: { error: { type: "ApiError", message: "overloaded" } }, parts: [] },
+        error: null,
+      },
+    })
+    const tool = createDelegateTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute({ agent: "coder", prompt: "x" }, ctx as any)) as string)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain("Agent error")
+  })
+})
+
+// ──────────────────────────────────────────────────────────
+// run_agents_pipeline
+// ──────────────────────────────────────────────────────────
+describe("createRunPipelineTool", () => {
+  it("runs steps sequentially and passes output as context", async () => {
+    const client = makeClient()
+    client.session.create
+      .mockResolvedValueOnce({ data: { id: "step-1" }, error: null })
+      .mockResolvedValueOnce({ data: { id: "step-2" }, error: null })
+    client.session.prompt
+      .mockResolvedValueOnce({ data: { info: {}, parts: [{ type: "text", text: "Plan result" }] }, error: null })
+      .mockResolvedValueOnce({ data: { info: {}, parts: [{ type: "text", text: "Code result" }] }, error: null })
+
+    const tool = createRunPipelineTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { steps: [{ agent: "planner", prompt: "Plan" }, { agent: "coder", prompt: "Code" }], abort_on_failure: true },
+      ctx as any,
+    )) as string)
+
+    expect(result.steps).toHaveLength(2)
+    expect(result.steps[0].success).toBe(true)
+    expect(result.steps[1].success).toBe(true)
+    // Second step input should include first step output
+    expect(result.steps[1].input).toContain("Plan result")
+    expect(result.aborted).toBe(false)
+  })
+
+  it("creates a fresh session per step (not reusing)", async () => {
+    const client = makeClient()
+    client.session.create
+      .mockResolvedValueOnce({ data: { id: "step-a" }, error: null })
+      .mockResolvedValueOnce({ data: { id: "step-b" }, error: null })
+
+    const tool = createRunPipelineTool(client as any)
+    const ctx = makeContext()
+    await tool.execute(
+      { steps: [{ agent: "planner", prompt: "p1" }, { agent: "coder", prompt: "p2" }], abort_on_failure: true },
+      ctx as any,
+    )
+
+    expect(client.session.create).toHaveBeenCalledTimes(2)
+    // Different session IDs used for each step
+    const ids = client.session.prompt.mock.calls.map((c: any) => c[0].path.id)
+    expect(ids[0]).toBe("step-a")
+    expect(ids[1]).toBe("step-b")
+  })
+
+  it("aborts pipeline on step failure when abort_on_failure is true", async () => {
+    const client = makeClient({
+      promptResult: { data: null, error: { detail: "step failed" } },
+    })
+    const tool = createRunPipelineTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { steps: [{ agent: "planner", prompt: "p1" }, { agent: "coder", prompt: "p2" }], abort_on_failure: true },
+      ctx as any,
+    )) as string)
+
+    expect(result.steps).toHaveLength(1)
+    expect(result.steps[0].success).toBe(false)
+    expect(result.aborted).toBe(true)
+  })
+
+  it("continues pipeline on failure when abort_on_failure is false", async () => {
+    const client = makeClient()
+    client.session.create.mockResolvedValue({ data: { id: "s1" }, error: null })
+    client.session.prompt
+      .mockResolvedValueOnce({ data: null, error: { detail: "step 1 fail" } })
+      .mockResolvedValueOnce({ data: { info: {}, parts: [{ type: "text", text: "Step 2 ok" }] }, error: null })
+
+    const tool = createRunPipelineTool(client as any)
+    const ctx = makeContext()
+    const result = JSON.parse((await tool.execute(
+      { steps: [{ agent: "a1", prompt: "p1" }, { agent: "a2", prompt: "p2" }], abort_on_failure: false },
+      ctx as any,
+    )) as string)
+
+    expect(result.steps).toHaveLength(2)
+    expect(result.steps[0].success).toBe(false)
+    expect(result.steps[1].success).toBe(true)
+    expect(result.aborted).toBe(false)
+  })
+})

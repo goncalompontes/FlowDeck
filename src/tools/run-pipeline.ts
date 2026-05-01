@@ -1,86 +1,107 @@
 import { tool } from "@opencode-ai/plugin"
-import { timestamp } from "./planning-state-lib"
+import type { OpencodeClient } from "@opencode-ai/sdk"
 
 interface PipelineStep {
   agent: string
   prompt: string
 }
 
-interface PipelineResult {
-  steps: Array<{
-    agent: string
-    input: string
-    output: string
-    duration_ms: number
-  }>
-  total_duration_ms: number
-  aborted: boolean
+interface StepTrace {
+  agent: string
+  session_id?: string
+  input: string
+  output: string
+  duration_ms: number
+  success: boolean
 }
 
-/**
- * Tool: run_agents_pipeline
- * Executes steps sequentially in order.
- * Per proposal spec:
- * - Execute steps in order
- * - Append previous output to next step context
- * - On each step completion: call mark_step_complete()
- * - Return full trace (each step's input + output + duration)
- */
-export const runPipelineTool = tool({
-  description: "Run agents in sequential pipeline. Each step's output is appended to the next step's context. Returns full trace with input/output/duration per step.",
-  args: {
-    steps: tool.schema.array(tool.schema.object({
-      agent: tool.schema.string(),
-      prompt: tool.schema.string(),
-    })),
-    initial_context: tool.schema.string().optional(),
-    abort_on_failure: tool.schema.boolean().optional().default(true),
-  },
-  async execute(args): Promise<string> {
-    const startTime = Date.now()
-    const trace: PipelineResult["steps"] = []
-    let context = args.initial_context || ""
-    let aborted = false
+function extractText(parts: Array<{ type: string; text?: string }>): string {
+  return parts
+    .filter(p => p.type === "text" && typeof p.text === "string")
+    .map(p => p.text as string)
+    .join("\n")
+}
 
-    for (let i = 0; i < args.steps.length; i++) {
-      const step = args.steps[i]
-      const stepStart = Date.now()
+export function createRunPipelineTool(client: OpencodeClient) {
+  return tool({
+    description: "Run agents in sequential pipeline. Each step's output is appended to the next step's context. One fresh child session per step. Returns full trace with session ID, input/output/duration per step.",
+    args: {
+      steps: tool.schema.array(tool.schema.object({
+        agent: tool.schema.string(),
+        prompt: tool.schema.string(),
+      })),
+      initial_context: tool.schema.string().optional(),
+      abort_on_failure: tool.schema.boolean().optional().default(true),
+    },
+    async execute(args, context): Promise<string> {
+      const startTime = Date.now()
+      const trace: StepTrace[] = []
+      let carryContext = args.initial_context ?? ""
+      let aborted = false
 
-      try {
-        const stepInput = context ? `${context}\n\n---\n\n${step.prompt}` : step.prompt
-
-        // Execute step - in actual OpenCode implementation this calls actual agent
-        const output = `[${step.agent}] Executed: ${step.prompt.substring(0, 50)}...`
-
-        trace.push({
-          agent: step.agent,
-          input: stepInput,
-          output,
-          duration_ms: Date.now() - stepStart,
-        })
-
-        // Append output to context for next step
-        context = output
-
-      } catch (error: unknown) {
-        const errorMsg = error instanceof Error ? error.message : String(error)
-        trace.push({
-          agent: step.agent,
-          input: context,
-          output: `ERROR: ${errorMsg}`,
-          duration_ms: Date.now() - stepStart,
-        })
-        aborted = true
-        if (args.abort_on_failure) {
+      for (const step of args.steps) {
+        if (context.abort.aborted) {
+          aborted = true
           break
         }
-      }
-    }
 
-    return JSON.stringify({
-      steps: trace,
-      total_duration_ms: Date.now() - startTime,
-      aborted,
-    })
-  },
-})
+        const stepStart = Date.now()
+        const stepInput = carryContext
+          ? `${carryContext}\n\n---\n\n${step.prompt}`
+          : step.prompt
+
+        // Fresh session per step — prevents cumulative hidden state
+        const createRes = await client.session.create({
+          body: { parentID: context.sessionID, title: `${step.agent}-pipeline` },
+          query: { directory: context.directory },
+        })
+
+        if (createRes.error || !createRes.data?.id) {
+          const errMsg = `Failed to create session: ${(createRes.error as any)?.detail ?? "unknown"}`
+          trace.push({ agent: step.agent, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
+          aborted = true
+          break
+        }
+
+        const childId = createRes.data.id
+
+        const promptRes = await client.session.prompt({
+          path: { id: childId },
+          body: {
+            agent: step.agent,
+            parts: [{ type: "text", text: stepInput }],
+            tools: { question: false },
+          },
+          query: { directory: context.directory },
+        })
+
+        if (promptRes.error) {
+          const errMsg = `Prompt failed: ${(promptRes.error as any)?.detail ?? "unknown"}`
+          trace.push({ agent: step.agent, session_id: childId, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
+          if (args.abort_on_failure) { aborted = true; break }
+          continue
+        }
+
+        const info = promptRes.data?.info
+        if (info?.error) {
+          const errMsg = `Agent error: ${JSON.stringify(info.error)}`
+          trace.push({ agent: step.agent, session_id: childId, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
+          if (args.abort_on_failure) { aborted = true; break }
+          continue
+        }
+
+        const output = extractText((promptRes.data?.parts ?? []) as Array<{ type: string; text?: string }>)
+        trace.push({ agent: step.agent, session_id: childId, input: stepInput, output: output || "(no text output)", duration_ms: Date.now() - stepStart, success: true })
+
+        // Pass this step's output as context to the next step
+        carryContext = output
+      }
+
+      return JSON.stringify({
+        steps: trace,
+        total_duration_ms: Date.now() - startTime,
+        aborted,
+      })
+    },
+  })
+}
