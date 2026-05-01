@@ -7,6 +7,42 @@ const PLANNING_DIR = ".planning"
 const CONFIG_FILE = "config.json"
 const STATE_FILE = "STATE.md"
 
+/**
+ * Safe Execution Mode — three tiers of AI edit safety.
+ * auto:         AI can apply edits without confirmation (default, low-risk changes)
+ * guarded:      AI applies with inline patch-trust warnings; requires human ACK for high-risk
+ * review-only:  AI proposes diffs but cannot write files; human applies manually
+ */
+export type ExecutionMode = "auto" | "guarded" | "review-only"
+
+/**
+ * Derive execution mode from config and risk signals.
+ * Priority: explicit config.execution_mode → volatility/trust override → plan_confirmed fallback.
+ */
+export function resolveExecutionMode(
+  configPath: string,
+  trustScore: number | null,  // 0–100, null = unknown
+  volatility?: string         // "stable" | "moderate" | "volatile" | "critical"
+): ExecutionMode {
+  if (existsSync(configPath)) {
+    try {
+      const config = JSON.parse(readFileSync(configPath, "utf-8"))
+      if (config.execution_mode === "review-only") return "review-only"
+      if (config.execution_mode === "guarded") return "guarded"
+      if (config.execution_mode === "auto") return "auto"
+    } catch { /* fall through */ }
+  }
+  // Auto-switch based on trust score
+  if (trustScore !== null) {
+    if (trustScore < 30) return "review-only"
+    if (trustScore < 60) return "guarded"
+  }
+  // Auto-switch based on file volatility
+  if (volatility === "critical") return "review-only"
+  if (volatility === "volatile") return "guarded"
+  return "auto"
+}
+
 // Build/deploy command patterns for bash detection
 const BUILD_DEPLOY_PATTERNS = [
   "npm build", "npm run build", "bun build", "yarn build",
@@ -61,6 +97,15 @@ export async function guardRailsHook(
     // Check .codebase/ existence — warn if missing (proposal spec line 412)
     if (!existsSync(codebaseDirectory)) {
       process.stdout.write(`[flowdeck] WARNING: .codebase/ not found. Run /map-codebase to map the codebase.\n`)
+    }
+
+    // Resolve safe execution mode — switches between auto/guarded/review-only
+    const execMode = resolveExecutionMode(configPath, null)
+    if (execMode === "review-only") {
+      throw new Error(`[flowdeck] BLOCK (review-only mode): propose diff but do not apply. Set execution_mode in .planning/config.json to change.`)
+    }
+    if (execMode === "guarded") {
+      process.stdout.write(`[flowdeck] GUARDED MODE: edit will proceed but flag for human review.\n`)
     }
 
     // Check guard_enforcement override

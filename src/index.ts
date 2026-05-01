@@ -6,11 +6,18 @@ import { workspaceStateTool } from "./tools/workspace-state"
 import { runParallelTool } from "./tools/run-parallel"
 import { runPipelineTool } from "./tools/run-pipeline"
 import { delegateTool } from "./tools/delegate"
+import { repoMemoryTool } from "./tools/repo-memory"
+import { failureReplayTool } from "./tools/failure-replay"
+import { decisionTraceTool } from "./tools/decision-trace"
+import { volatilityMapTool } from "./tools/volatility-map"
+import { policyEngineTool } from "./tools/policy-engine"
 
 import { guardRailsHook } from "./hooks/guard-rails"
 import { toolGuardHook } from "./hooks/tool-guard"
 import { sessionStartHook } from "./hooks/session-start"
 import { notifyCommandInteraction } from "./hooks/notifications"
+import { patchTrustHook } from "./hooks/patch-trust"
+import { decisionTraceHook } from "./hooks/decision-trace-hook"
 
 import { newProjectCommand } from "./commands/setup/new-project"
 import { mapCodebaseCommand } from "./commands/setup/map-codebase"
@@ -28,6 +35,13 @@ import { progressCommand } from "./commands/state/progress"
 import { resumeCommand } from "./commands/state/resume"
 import { checkpointCommand } from "./commands/state/checkpoint"
 import { workspaceCommands } from "./commands/state/workspace-commands"
+import { impactRadarCommand } from "./commands/intelligence/impact-radar"
+import { blastRadiusCommand } from "./commands/intelligence/blast-radius"
+import { translateIntentCommand } from "./commands/intelligence/translate-intent"
+import { volatilityMapCommand } from "./commands/intelligence/volatility-map-cmd"
+import { regressionPredictCommand } from "./commands/intelligence/regression-predict"
+import { testGapCommand } from "./commands/intelligence/test-gap"
+import { reviewRouteCommand } from "./commands/intelligence/review-route"
 
 function parseArgs(rawArgs: string): Record<string, unknown> {
   if (!rawArgs || rawArgs.trim() === "") return {}
@@ -58,6 +72,13 @@ const server: Plugin = async (input, _options) => {
     resumeCommand,
     checkpointCommand,
     ...workspaceCommands,
+    impactRadarCommand,
+    blastRadiusCommand,
+    translateIntentCommand,
+    volatilityMapCommand,
+    regressionPredictCommand,
+    testGapCommand,
+    reviewRouteCommand,
   ]
 
   const commandMap: Record<string, { execute(context: any, args?: any): Promise<any> }> = {}
@@ -73,6 +94,11 @@ const server: Plugin = async (input, _options) => {
       "run-parallel": runParallelTool,
       "run-pipeline": runPipelineTool,
       "delegate": delegateTool,
+      "repo-memory": repoMemoryTool,
+      "failure-replay": failureReplayTool,
+      "decision-trace": decisionTraceTool,
+      "volatility-map": volatilityMapTool,
+      "policy-engine": policyEngineTool,
     },
 
     event: async ({ event }: { event: any }) => {
@@ -103,6 +129,8 @@ const server: Plugin = async (input, _options) => {
     "tool.execute.before": async (toolInput: any, toolOutput: any) => {
       await guardRailsHook({ directory }, toolInput, toolOutput)
       await toolGuardHook({ directory }, toolInput, toolOutput)
+      await patchTrustHook({ directory }, toolInput, toolOutput)
+      await decisionTraceHook({ directory }, toolInput, toolOutput)
     },
   }
 }

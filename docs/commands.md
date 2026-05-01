@@ -22,6 +22,13 @@ Commands are slash commands registered in OpenCode. Run them by typing `/command
 | `/roadmap` | — | View or update ROADMAP.md with phase statuses |
 | `/settings` | — | View or update FlowDeck model and workspace settings |
 | `/multi-repo` | `[--add\|--list\|--status\|--remove]` | Manage multi-repo configuration |
+| `/impact-radar` | `[--change] [--scope]` | Predict affected files, APIs, tests before editing |
+| `/blast-radius` | `[--change] [--depth]` | Show downstream consequences and hidden dependencies |
+| `/translate-intent` | `[--intent]` | Convert vague request into ranked concrete implementation options |
+| `/volatility-map` | `[--threshold] [--limit]` | Show unstable code zones by churn and hotfix frequency |
+| `/regression-predict` | `[--change] [--categories]` | Estimate likely regression categories for a change |
+| `/test-gap` | `[--change] [--scope]` | Identify weakly-tested areas in a proposed change |
+| `/review-route` | `[--files] [--change]` | Route risky patches to the right reviewer type |
 
 ---
 

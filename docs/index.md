@@ -19,9 +19,10 @@ FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orch
 |----------|-------------|
 | [Agents](agents.md) | All 23 agents — names, roles, models, and when to invoke each one |
 | [Skills](skills.md) | All 24 skills — what each skill does and example prompts that activate it |
-| [Commands](commands.md) | All 16 slash commands — syntax, arguments, and what each command triggers |
+| [Commands](commands.md) | All 23 slash commands — syntax, arguments, and what each command triggers |
 | [Workflows](workflows.md) | All 14 built-in workflows — flow diagrams, inputs, outputs, and agent involvement |
 | [Rules](rules.md) | Language and common rule files — what they enforce and how to activate them |
+| [Intelligence Features](intelligence.md) | 15 AI-safety features: impact radar, patch trust, blast radius, decision trace, and more |
 
 ---
 
@@ -64,3 +65,10 @@ FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orch
 | `/write-docs` | Generate or update project documentation |
 | `/multi-repo` | Coordinate a change across multiple registered repositories |
 | `/settings` | View or update FlowDeck model assignments and configuration |
+| `/impact-radar` | Predict affected files/APIs/tests before editing |
+| `/blast-radius` | Show downstream consequences and hidden dependencies of a change |
+| `/translate-intent` | Convert vague request into ranked concrete implementation options |
+| `/volatility-map` | Show unstable code zones by churn and hotfix frequency |
+| `/regression-predict` | Estimate likely regression categories before making a change |
+| `/test-gap` | Identify weakly-tested areas in a proposed change |
+| `/review-route` | Route risky patches to security, backend, infra, or domain reviewers |
