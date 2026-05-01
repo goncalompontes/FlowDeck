@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
+import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
 
 export const fixBugCommand = {
   name: "fix-bug",
   description: "Load STATE.md + ARCHITECTURE.md — explore scope — researcher — mini-plan — coder fix — regression test — reviewer confirmation",
-  async execute(context, args?: { scope?: string; json?: boolean }) {
+  async execute(context, args?: { scope?: string; bug?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 
@@ -33,6 +34,10 @@ export const fixBugCommand = {
       architectureContext = readFileSync(archPath, "utf-8")
     }
 
+    // Run impact radar on the bug description + scope
+    const bugText = [args?.bug ?? "", scope !== "all" ? scope : ""].filter(Boolean).join(" ")
+    const radar = runImpactRadar(dir, bugText)
+
     const workflow = "fix-bug-flow.md"
 
     const config = {
@@ -45,7 +50,8 @@ export const fixBugCommand = {
         { step: 6, name: "verify", agent: "reviewer", action: "confirm fix after regression passes", require_regression_pass: true }
       ],
       scope,
-      architecture_context: architectureContext ? architectureContext.substring(0, 500) : null
+      architecture_context: architectureContext ? architectureContext.substring(0, 500) : null,
+      impact_radar: radar,
     }
 
     if (args?.json) {
@@ -55,6 +61,8 @@ export const fixBugCommand = {
         meta: { formatted: "json", timestamp: timestamp() }
       }
     }
+
+    const radarLines = impactRadarSummaryLines(radar)
 
     const tableLines = [
       "─".repeat(55),
@@ -67,6 +75,7 @@ export const fixBugCommand = {
       "  [4] fix       → @coder implements",
       "  [5] regression → @tester writes/runs test (must pass)",
       "  [6] verify    → @reviewer confirms (after regression)",
+      ...radarLines,
       "─".repeat(55),
       "⚠ Regression test MUST pass before reviewer confirms",
       "═".repeat(55)
@@ -78,6 +87,7 @@ export const fixBugCommand = {
       workflow,
       config,
       phase: state.phase,
+      impact_radar: radar,
       meta: { formatted: "table", timestamp: timestamp() }
     }
   }

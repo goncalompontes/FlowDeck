@@ -1,11 +1,12 @@
-import { existsSync } from "fs"
+import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, codebaseDir, phasePlanPath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 import { codebaseStateTool } from "../../tools/codebase-state"
+import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
 
 export const newFeatureCommand = {
   name: "new-feature",
   description: "Execute feature implementation — guard check, orchestrator coordination, parallel coder+researcher, reviewer, tester, STATE.md update",
-  async execute(context, args?: { json?: boolean }) {
+  async execute(context, args?: { feature?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 
@@ -43,6 +44,10 @@ export const newFeatureCommand = {
       }
     }
 
+    // Run impact radar on the feature description + plan content
+    const featureText = args?.feature ?? readFileSync(planPath, "utf-8").split("\n").slice(0, 10).join(" ")
+    const radar = runImpactRadar(dir, featureText)
+
     const codebaseResult = codebaseStateTool.execute({ action: "read", files: ["STACK.md", "ARCHITECTURE.md"] }, context)
 
     const workflow = "execute-flow.md"
@@ -63,7 +68,8 @@ export const newFeatureCommand = {
         coder: true,
         researcher: true,
       },
-      worktree: true
+      worktree: true,
+      impact_radar: radar,
     }
 
     if (args?.json) {
@@ -74,11 +80,14 @@ export const newFeatureCommand = {
       }
     }
 
+    const radarLines = impactRadarSummaryLines(radar)
+
     const tableLines = [
       "═".repeat(55),
       `New Feature: phase ${phase}`,
       "─".repeat(55),
       `  Guard: .planning/ ✓  .codebase/ ✓  plan_confirmed ✓`,
+      ...radarLines,
       "─".repeat(55),
       "  orchestrator → coordinates execution",
       "  parallel:     → @coder + @researcher",
@@ -95,6 +104,7 @@ export const newFeatureCommand = {
       config,
       phase,
       plan_file: planPath,
+      impact_radar: radar,
       meta: { formatted: "table", timestamp: timestamp() }
     }
   }

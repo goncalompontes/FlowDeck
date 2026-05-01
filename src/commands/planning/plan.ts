@@ -1,73 +1,36 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs"
 import { join } from "path"
-import { planningDir, statePath, phasePlanPath, timestamp, codebaseDir } from "../../tools/planning-state-lib"
+import { planningDir, statePath, phasePlanPath, timestamp } from "../../tools/planning-state-lib"
 import { confirmPrompt } from "../../lib/confirmation"
+import { runImpactRadar } from "../../lib/impact-radar"
 
 function buildImpactRadarSection(dir: string, changeText: string): string {
-  const cd = codebaseDir(dir)
-  const lower = changeText.toLowerCase()
-  const words = lower.split(/\s+/).filter(w => w.length > 3)
-
+  const radar = runImpactRadar(dir, changeText)
   const lines: string[] = ["## Change Impact Radar", ""]
 
-  let hasAny = false
-
-  // Volatility hotspots
-  const volatilityPath = join(cd, "VOLATILITY.json")
-  if (existsSync(volatilityPath)) {
-    try {
-      const v = JSON.parse(readFileSync(volatilityPath, "utf-8"))
-      const hits = (v.entries ?? []).filter((e: any) =>
-        (e.stability === "volatile" || e.stability === "critical") &&
-        words.some(w => e.path.toLowerCase().includes(w))
-      )
-      if (hits.length > 0) {
-        hasAny = true
-        lines.push("### Volatile Zones Touched")
-        for (const h of hits) lines.push(`- \`${h.path}\` — ${h.stability}`)
-        lines.push("")
-      }
-    } catch { /* ignore */ }
-  }
-
-  // Known failures related to this change
-  const failuresPath = join(cd, "FAILURES.json")
-  if (existsSync(failuresPath)) {
-    try {
-      const f = JSON.parse(readFileSync(failuresPath, "utf-8"))
-      const relevant = (f.entries ?? []).filter((e: any) =>
-        !e.tags?.includes("resolved") &&
-        words.some(w => (e.description ?? "").toLowerCase().includes(w))
-      )
-      if (relevant.length > 0) {
-        hasAny = true
-        lines.push("### Known Failures (Unresolved)")
-        for (const e of relevant.slice(0, 5)) {
-          lines.push(`- **${e.id}** (×${e.recurrence_count}): ${e.description.substring(0, 80)}`)
-        }
-        lines.push("")
-      }
-    } catch { /* ignore */ }
-  }
-
-  // Architecture memory nodes
-  const memoryPath = join(cd, "MEMORY.json")
-  if (existsSync(memoryPath)) {
-    try {
-      const m = JSON.parse(readFileSync(memoryPath, "utf-8"))
-      const nodes = Object.values(m.nodes ?? {}) as any[]
-      const hits = nodes.filter(n => words.some(w => (n.path ?? "").toLowerCase().includes(w)))
-      if (hits.length > 0) {
-        hasAny = true
-        lines.push("### Related Architecture Nodes")
-        for (const n of hits.slice(0, 8)) lines.push(`- \`${n.path}\` (${n.type})${n.owner ? ` — owner: ${n.owner}` : ""}`)
-        lines.push("")
-      }
-    } catch { /* ignore */ }
-  }
-
-  if (!hasAny) {
+  if (!radar.risk_flag && radar.related_modules.length === 0) {
     lines.push("_No volatility or failure signals found for this change. Proceed with standard review._")
+    lines.push("")
+    return lines.join("\n")
+  }
+
+  if (radar.hotspots.length > 0) {
+    lines.push("### Volatile Zones Touched")
+    for (const h of radar.hotspots) lines.push(`- \`${h.path}\` — ${h.stability}`)
+    lines.push("")
+  }
+  if (radar.known_failures.length > 0) {
+    lines.push("### Known Failures (Unresolved)")
+    for (const e of radar.known_failures.slice(0, 5)) {
+      lines.push(`- **${e.id}** (×${e.recurrence_count}): ${e.description.substring(0, 80)}`)
+    }
+    lines.push("")
+  }
+  if (radar.related_modules.length > 0) {
+    lines.push("### Related Architecture Nodes")
+    for (const n of radar.related_modules.slice(0, 8)) {
+      lines.push(`- \`${n.path}\` (${n.type})${n.owner ? ` — owner: ${n.owner}` : ""}`)
+    }
     lines.push("")
   }
 
