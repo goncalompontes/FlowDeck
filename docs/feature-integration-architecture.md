@@ -17,7 +17,7 @@ This layer adds 8 capabilities behind the existing command architecture without 
 | Agent Performance Memory | `src/services/agent-performance.ts` | `.codebase/AGENT_PERF.json` |
 | Structured Telemetry | `src/services/telemetry.ts` + `src/hooks/telemetry-hook.ts` | `.codebase/TELEMETRY.jsonl` |
 | Dashboard Integration | `src/dashboard/` | reads all `.codebase/` files |
-| Failure-to-Rule Learning | existing `src/tools/failure-replay.ts` + `src/tools/policy-engine.ts` | `.codebase/FAILURES.json`, `POLICIES.json` |
+| Failure-to-Rule Learning | `src/services/policy-compiler.ts` (`learnFromFailure`) | `.codebase/POLICIES.json` |
 
 ---
 
