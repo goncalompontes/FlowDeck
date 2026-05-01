@@ -2,6 +2,9 @@ import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, codebaseDir, phasePlanPath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 import { codebaseStateTool } from "../../tools/codebase-state"
 import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
+import { buildAgentConfig } from "../../services/model-router"
+import { startTrace } from "../../services/run-trace"
+import { appendEvent } from "../../services/telemetry"
 
 export const newFeatureCommand = {
   name: "fd-new-feature",
@@ -49,22 +52,38 @@ export const newFeatureCommand = {
     const radar = runImpactRadar(dir, featureText)
     const priorFailures = lookupPriorFailures(dir, "all", featureText)
 
+    // Start a run trace for observability
+    const trace = startTrace(dir, "fd-new-feature", { feature: args?.feature ?? "", phase }, process.env.OPENCODE_SESSION_ID)
+    appendEvent(dir, {
+      session_id: process.env.OPENCODE_SESSION_ID ?? "session-0",
+      run_id: trace.run_id,
+      event: "command.start",
+      command: "fd-new-feature",
+      risk_score: radar.score,
+      meta: { phase, plan_file: planPath },
+    })
+
     const codebaseResult = codebaseStateTool.execute({ action: "read", files: ["STACK.md", "ARCHITECTURE.md"] }, context)
+
+    // Build agent configs using model router (replaces hardcoded models)
+    const riskScore = radar.score
+    const agentConfigs = buildAgentConfig(dir, [
+      { name: "coder", task_type: "implementation", risk_score: riskScore },
+      { name: "researcher", task_type: "analysis", risk_score: riskScore },
+      { name: "reviewer", task_type: "review", risk_score: riskScore },
+      { name: "tester", task_type: "testing", risk_score: riskScore },
+    ])
 
     const workflow = "execute-flow.md"
 
     const config = {
       orchestrator: {
-        model: "claude-sonnet-4-5",
+        model: agentConfigs.find(a => a.name === "coder")?.model ?? "claude-sonnet-4-5",
         temperature: 0.3,
         maxSteps: 60
       },
-      agents: [
-        { name: "coder", model: "claude-opus-4-5", temperature: 0.2, reasoningEffort: "high" },
-        { name: "researcher", model: "gpt-4o", temperature: 0.5 },
-        { name: "reviewer", model: "gemini-2.5-flash", temperature: 0.1 },
-        { name: "tester", model: "claude-haiku-4-5", temperature: 0.1 }
-      ],
+      agents: agentConfigs,
+      run_id: trace.run_id,
       parallel: {
         coder: true,
         researcher: true,

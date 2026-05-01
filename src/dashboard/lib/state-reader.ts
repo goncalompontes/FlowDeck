@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { planningDir, readPlanningState } from "../../tools/planning-state-lib"
-import type { Phase, DashboardData } from "../types"
+import { getCommandSummary, getRecentToolFailures } from "../../services/telemetry"
+import { listTraces } from "../../services/run-trace"
+import { getPendingApprovals } from "../../services/approval-manager"
+import { getStats } from "../../services/agent-performance"
+import type { Phase, DashboardData, TelemetrySummary, RecentRun, PendingApproval, AgentPerfSummary } from "../types"
 
 function parsePhaseLine(line: string): Phase | null {
   const completeMatch = line.match(/\- \[x\] Phase (\d+): (.+)/)
@@ -128,5 +132,35 @@ export function readDashboardData(dir: string): DashboardData {
     blockers: state.blockers || [],
     progress: { total, completed, percent },
     currentPhase,
+    telemetrySummary: getCommandSummary(dir) as TelemetrySummary[],
+    recentRuns: listTraces(dir, 10).map(t => ({
+      run_id: t.run_id,
+      command: t.command,
+      started_at: t.started_at,
+      ended_at: t.ended_at,
+      status: t.status,
+      risk_score: t.risk_score,
+      files_touched: t.files_touched.length,
+      outcome: t.outcome,
+    })) as RecentRun[],
+    pendingApprovals: getPendingApprovals(dir).map(a => ({
+      id: a.id,
+      trigger: a.trigger,
+      reason: a.reason,
+      risk_score: a.risk_score,
+      file_path: a.file_path,
+      requested_at: a.requested_at,
+    })) as PendingApproval[],
+    agentPerf: getStats(dir)
+      .filter(e => e.runs >= 2)
+      .map(e => ({
+        agent: e.agent,
+        model: e.model,
+        task_type: e.task_type,
+        success_rate: Math.round((e.successes / e.runs) * 100),
+        runs: e.runs,
+        avg_duration_ms: Math.round(e.total_duration_ms / e.runs),
+      })) as AgentPerfSummary[],
+    toolFailureCount: getRecentToolFailures(dir, 50).length,
   }
 }

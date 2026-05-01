@@ -227,6 +227,42 @@
     .space-md { height: var(--space-md); }
     .space-lg { height: var(--space-lg); }
 
+    /* === Telemetry / Ops === */
+    .ops-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-top: var(--space-md); }
+    @media (max-width: 640px) { .ops-grid { grid-template-columns: 1fr; } }
+    .stat-card {
+      background: rgba(59, 130, 246, 0.05);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+    }
+    .stat-value { font-size: 22px; font-weight: 700; color: var(--color-accent); }
+    .stat-label { font-size: var(--font-label); color: var(--color-text-muted); margin-top: 2px; }
+
+    .table { width: 100%; border-collapse: collapse; margin-top: var(--space-md); }
+    .table th { font-size: var(--font-label); color: var(--color-text-muted); text-align: left; padding: var(--space-xs) var(--space-sm); border-bottom: 1px solid var(--color-border); }
+    .table td { font-size: var(--font-body); color: var(--color-text-secondary); padding: var(--space-xs) var(--space-sm); border-bottom: 1px solid rgba(55, 65, 81, 0.4); vertical-align: top; }
+    .table tr:last-child td { border-bottom: none; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-ok { background: rgba(16,185,129,0.15); color: #10b981; }
+    .badge-fail { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .badge-running { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .badge-pending { background: rgba(107,114,128,0.15); color: #9ca3af; }
+    .badge-risk-high { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .badge-risk-med { background: rgba(251,146,60,0.15); color: #f97316; }
+    .badge-risk-low { background: rgba(16,185,129,0.15); color: #10b981; }
+
+    .approval-item {
+      padding: var(--space-sm) var(--space-md);
+      background: rgba(251, 146, 60, 0.08);
+      border-left: 3px solid #f97316;
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-xs);
+    }
+    .approval-trigger { font-size: var(--font-label); color: #f97316; font-weight: 600; }
+    .approval-reason { font-size: var(--font-body); color: var(--color-text-secondary); }
+
     /* === Responsive === */
     @media (max-width: 640px) {
       .header-top { flex-direction: column; }
@@ -251,6 +287,105 @@
     </div>
 
     <%- include('partials/blockers.ejs') %>
+
+    <% if (pendingApprovals && pendingApprovals.length > 0) { %>
+    <div class="space-lg"></div>
+    <div class="section-card">
+      <p class="label">⚠ Pending Approvals (<%= pendingApprovals.length %>)</p>
+      <div class="space-sm"></div>
+      <% for (const a of pendingApprovals) { %>
+        <div class="approval-item">
+          <div class="approval-trigger"><%= a.trigger %> — risk: <%= a.risk_score %></div>
+          <div class="approval-reason"><%= a.reason %></div>
+          <% if (a.file_path) { %><div style="font-size:11px;color:#9ca3af;margin-top:2px"><%= a.file_path %></div><% } %>
+        </div>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (recentRuns && recentRuns.length > 0) { %>
+    <div class="space-lg"></div>
+    <div class="section-card">
+      <p class="label">Recent Runs</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Command</th><th>Status</th><th>Risk</th><th>Files</th><th>Started</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const r of recentRuns) { %>
+          <tr>
+            <td><code style="font-size:12px"><%= r.command %></code></td>
+            <td>
+              <span class="badge badge-<%= r.status === 'complete' ? 'ok' : r.status === 'failed' ? 'fail' : r.status === 'running' ? 'running' : 'pending' %>">
+                <%= r.status %>
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-risk-<%= r.risk_score < 40 ? 'high' : r.risk_score < 70 ? 'med' : 'low' %>">
+                <%= r.risk_score %>
+              </span>
+            </td>
+            <td><%= r.files_touched %></td>
+            <td style="color:var(--color-text-muted);font-size:11px"><%= r.started_at.slice(0, 16).replace('T', ' ') %></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+
+    <% if (telemetrySummary && telemetrySummary.length > 0) { %>
+    <div class="space-lg"></div>
+    <div class="section-card">
+      <p class="label">Command Telemetry</p>
+      <div class="ops-grid">
+        <% for (const s of telemetrySummary.slice(0, 4)) { %>
+        <div class="stat-card">
+          <div class="stat-value"><%= s.total_runs %></div>
+          <div class="stat-label"><%= s.command %></div>
+          <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px">
+            ✓ <%= s.successes %> &nbsp; ✗ <%= s.failures %> &nbsp; ~<%= s.avg_duration_ms %>ms
+          </div>
+        </div>
+        <% } %>
+      </div>
+      <% if (toolFailureCount > 0) { %>
+      <div style="margin-top:var(--space-sm);font-size:var(--font-label);color:#ef4444">
+        ⚠ <%= toolFailureCount %> tool failures in recent session
+      </div>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (agentPerf && agentPerf.length > 0) { %>
+    <div class="space-lg"></div>
+    <div class="section-card">
+      <p class="label">Agent Performance</p>
+      <table class="table">
+        <thead>
+          <tr><th>Agent</th><th>Model</th><th>Task</th><th>Success</th><th>Runs</th><th>Avg ms</th></tr>
+        </thead>
+        <tbody>
+          <% for (const p of agentPerf.slice(0, 8)) { %>
+          <tr>
+            <td><%= p.agent %></td>
+            <td style="font-size:11px;color:var(--color-text-muted)"><%= p.model.split('-').slice(-2).join('-') %></td>
+            <td><%= p.task_type %></td>
+            <td>
+              <span class="badge badge-<%= p.success_rate >= 80 ? 'ok' : p.success_rate >= 50 ? 'running' : 'fail' %>">
+                <%= p.success_rate %>%
+              </span>
+            </td>
+            <td><%= p.runs %></td>
+            <td><%= p.avg_duration_ms %></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
   </main>
 </body>
 </html>

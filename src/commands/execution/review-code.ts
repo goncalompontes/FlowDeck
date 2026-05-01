@@ -1,6 +1,7 @@
 import { existsSync } from "fs"
 import { statePath, planningDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
+import { evaluatePolicies, formatViolations } from "../../services/policy-compiler"
 
 export const reviewCodeCommand = {
   name: "fd-review-code",
@@ -30,6 +31,12 @@ export const reviewCodeCommand = {
     // Run impact radar on the scope being reviewed
     const radar = runImpactRadar(dir, scope !== "all" ? scope : "")
 
+    // Evaluate policies against the review scope
+    const policyViolations = evaluatePolicies(dir, {
+      command: "fd-review-code",
+      file_path: scope !== "all" ? scope : undefined,
+    })
+
     const workflow = "review-code-flow.md"
 
     const config = {
@@ -45,6 +52,7 @@ export const reviewCodeCommand = {
         minor: "reviewer.minor + tester.minor"
       },
       impact_radar: radar,
+      policy_violations: policyViolations,
     }
 
     if (args?.json) {
@@ -66,6 +74,7 @@ export const reviewCodeCommand = {
       "  researcher → API contracts, edge cases",
       "  tester    → test coverage",
       ...radarLines,
+      ...(policyViolations.length > 0 ? ["─".repeat(50), formatViolations(policyViolations)] : []),
       "─".repeat(50),
       "Aggregating results into critical/major/minor report...",
       "═".repeat(50)

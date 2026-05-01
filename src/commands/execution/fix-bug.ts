@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
+import { startTrace } from "../../services/run-trace"
+import { appendEvent } from "../../services/telemetry"
+import { evaluatePolicies, learnFromFailure, formatViolations } from "../../services/policy-compiler"
 
 export const fixBugCommand = {
   name: "fd-fix-bug",
@@ -39,6 +42,28 @@ export const fixBugCommand = {
     const radar = runImpactRadar(dir, bugText)
     const priorFailures = lookupPriorFailures(dir, scope, args?.bug ?? "")
 
+    // Evaluate active policies against the fix context
+    const policyViolations = evaluatePolicies(dir, {
+      command: "fd-fix-bug",
+      change_description: bugText,
+    })
+
+    // Propose new policies from prior failures (returned to AI for consideration)
+    const proposedPolicies = priorFailures
+      .map(f => learnFromFailure(f.type, f.affected_paths, f.root_cause ?? ""))
+      .filter(Boolean)
+
+    // Start run trace
+    const trace = startTrace(dir, "fd-fix-bug", { bug: args?.bug ?? "", scope }, process.env.OPENCODE_SESSION_ID)
+    appendEvent(dir, {
+      session_id: process.env.OPENCODE_SESSION_ID ?? "session-0",
+      run_id: trace.run_id,
+      event: "command.start",
+      command: "fd-fix-bug",
+      risk_score: radar.score,
+      meta: { scope, prior_failure_count: priorFailures.length, policy_violations: policyViolations.length },
+    })
+
     const workflow = "fix-bug-flow.md"
 
     const config = {
@@ -51,6 +76,7 @@ export const fixBugCommand = {
         { step: 6, name: "verify", agent: "reviewer", action: "confirm fix after regression passes", require_regression_pass: true },
         { step: 7, name: "record", agent: "orchestrator", action: "call failure-replay record to log resolved bug in .codebase/FAILURES.json", tool: "failure-replay", tool_action: "record" },
       ],
+      run_id: trace.run_id,
       scope,
       architecture_context: architectureContext ? architectureContext.substring(0, 500) : null,
       impact_radar: radar,
@@ -63,6 +89,8 @@ export const fixBugCommand = {
         fix_applied: f.fix_applied ?? null,
         recurrence_count: f.recurrence_count,
       })),
+      policy_violations: policyViolations,
+      proposed_policies: proposedPolicies,
     }
 
     if (args?.json) {
@@ -101,6 +129,7 @@ export const fixBugCommand = {
       "  [7] record    → log resolved bug in FAILURES.json",
       ...priorFailureLines,
       ...radarLines,
+      ...(policyViolations.length > 0 ? ["─".repeat(55), formatViolations(policyViolations)] : []),
       "─".repeat(55),
       "⚠ Regression test MUST pass before reviewer confirms",
       "═".repeat(55)

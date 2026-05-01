@@ -18,6 +18,8 @@ import { sessionStartHook } from "./hooks/session-start"
 import { notifyCommandInteraction } from "./hooks/notifications"
 import { patchTrustHook } from "./hooks/patch-trust"
 import { decisionTraceHook } from "./hooks/decision-trace-hook"
+import { telemetryHook } from "./hooks/telemetry-hook"
+import { approvalHook } from "./hooks/approval-hook"
 
 import { newProjectCommand } from "./commands/setup/new-project"
 import { mapCodebaseCommand } from "./commands/setup/map-codebase"
@@ -46,6 +48,7 @@ import { reviewRouteCommand } from "./commands/intelligence/review-route"
 import { analyzeChangeCommand } from "./commands/analysis/analyze-change"
 import { guardedEditCommand } from "./commands/analysis/guarded-edit"
 import { evaluateRiskCommand } from "./commands/analysis/evaluate-risk"
+import { approveCommand } from "./commands/governance/approve"
 
 function parseArgs(rawArgs: string): Record<string, unknown> {
   if (!rawArgs || rawArgs.trim() === "") return {}
@@ -88,6 +91,8 @@ const server: Plugin = async (input, _options) => {
     analyzeChangeCommand,
     guardedEditCommand,
     evaluateRiskCommand,
+    // ── governance commands ──────────────────────────────────────────────
+    approveCommand,
   ]
 
   const commandMap: Record<string, { execute(context: any, args?: any): Promise<any> }> = {}
@@ -136,6 +141,8 @@ const server: Plugin = async (input, _options) => {
     },
 
     "tool.execute.before": async (toolInput: any, toolOutput: any) => {
+      await telemetryHook({ directory }, toolInput, toolOutput)
+      await approvalHook({ directory }, toolInput, toolOutput)
       await guardRailsHook({ directory }, toolInput, toolOutput)
       await toolGuardHook({ directory }, toolInput, toolOutput)
       await patchTrustHook({ directory }, toolInput, toolOutput)
