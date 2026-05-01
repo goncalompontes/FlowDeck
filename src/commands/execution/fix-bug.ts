@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
-import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
+import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
 
 export const fixBugCommand = {
   name: "fix-bug",
@@ -37,6 +37,7 @@ export const fixBugCommand = {
     // Run impact radar on the bug description + scope
     const bugText = [args?.bug ?? "", scope !== "all" ? scope : ""].filter(Boolean).join(" ")
     const radar = runImpactRadar(dir, bugText)
+    const priorFailures = lookupPriorFailures(dir, scope, args?.bug ?? "")
 
     const workflow = "fix-bug-flow.md"
 
@@ -47,11 +48,21 @@ export const fixBugCommand = {
         { step: 3, name: "mini-plan", agent: "orchestrator", action: "create fix plan from research findings" },
         { step: 4, name: "fix", agent: "coder", action: "implement bug fix" },
         { step: 5, name: "regression", agent: "tester", action: "write and run regression test (MUST PASS)", mode: "regression" },
-        { step: 6, name: "verify", agent: "reviewer", action: "confirm fix after regression passes", require_regression_pass: true }
+        { step: 6, name: "verify", agent: "reviewer", action: "confirm fix after regression passes", require_regression_pass: true },
+        { step: 7, name: "record", agent: "orchestrator", action: "call failure-replay record to log resolved bug in .codebase/FAILURES.json", tool: "failure-replay", tool_action: "record" },
       ],
       scope,
       architecture_context: architectureContext ? architectureContext.substring(0, 500) : null,
       impact_radar: radar,
+      prior_failures: priorFailures.map(f => ({
+        id: f.id,
+        type: f.type,
+        description: f.description,
+        affected_paths: f.affected_paths,
+        root_cause: f.root_cause ?? null,
+        fix_applied: f.fix_applied ?? null,
+        recurrence_count: f.recurrence_count,
+      })),
     }
 
     if (args?.json) {
@@ -64,10 +75,22 @@ export const fixBugCommand = {
 
     const radarLines = impactRadarSummaryLines(radar)
 
+    const priorFailureLines: string[] = priorFailures.length > 0
+      ? [
+          "─".repeat(55),
+          `  Prior failures in this area (${priorFailures.length}):`,
+          ...priorFailures.map(f => {
+            const rc = f.recurrence_count > 1 ? ` (×${f.recurrence_count})` : ""
+            const cause = f.root_cause ? ` — ${f.root_cause.substring(0, 60)}` : ""
+            return `  ⚠ [${f.id}]${rc}${cause}`
+          }),
+        ]
+      : []
+
     const tableLines = [
       "─".repeat(55),
       `Fix Bug: scope=${scope}`,
-      `Phase ${state.phase} | 6-step workflow`,
+      `Phase ${state.phase} | 7-step workflow`,
       "─".repeat(55),
       "  [1] explore   → investigate via ARCHITECTURE.md",
       "  [2] research  → identify root cause",
@@ -75,6 +98,8 @@ export const fixBugCommand = {
       "  [4] fix       → @coder implements",
       "  [5] regression → @tester writes/runs test (must pass)",
       "  [6] verify    → @reviewer confirms (after regression)",
+      "  [7] record    → log resolved bug in FAILURES.json",
+      ...priorFailureLines,
       ...radarLines,
       "─".repeat(55),
       "⚠ Regression test MUST pass before reviewer confirms",
@@ -88,6 +113,7 @@ export const fixBugCommand = {
       config,
       phase: state.phase,
       impact_radar: radar,
+      prior_failures: config.prior_failures,
       meta: { formatted: "table", timestamp: timestamp() }
     }
   }

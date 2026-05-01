@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "../tools/codebase-state"
+import type { FailureEntry } from "../tools/failure-replay"
 
 export interface ImpactRadarResult {
   hotspots: Array<{ path: string; stability: string }>
@@ -91,4 +92,42 @@ export function impactRadarSummaryLines(radar: ImpactRadarResult): string[] {
     lines.push(`  ℹ Related modules: ${radar.related_modules.map(m => m.path).join(", ")}`)
   }
   return lines
+}
+
+/**
+ * Look up prior failures from FAILURES.json that match by path prefix or keyword.
+ * Returns full FailureEntry objects (including root_cause and fix_applied) sorted by recurrence desc.
+ * Used by /fix-bug to surface lessons learned before the fix begins.
+ */
+export function lookupPriorFailures(
+  dir: string,
+  scope: string,
+  bugText: string,
+  limit = 5
+): FailureEntry[] {
+  const cd = codebaseDir(dir)
+  const failuresPath = join(cd, "FAILURES.json")
+  if (!existsSync(failuresPath)) return []
+
+  try {
+    const store = JSON.parse(readFileSync(failuresPath, "utf-8"))
+    const entries: FailureEntry[] = store.entries ?? []
+    const words = bugText.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+    const scopePrefix = scope !== "all" ? scope.replace(/^\.\//, "") : ""
+
+    const matched = entries
+      .filter(e => !e.tags?.includes("resolved"))
+      .filter(e => {
+        const pathMatch = scopePrefix
+          ? e.affected_paths.some(p => p.includes(scopePrefix))
+          : false
+        const keywordMatch = words.some(w => (e.description ?? "").toLowerCase().includes(w))
+        return pathMatch || keywordMatch
+      })
+      .sort((a, b) => (b.recurrence_count ?? 1) - (a.recurrence_count ?? 1))
+
+    return matched.slice(0, limit)
+  } catch {
+    return []
+  }
 }
