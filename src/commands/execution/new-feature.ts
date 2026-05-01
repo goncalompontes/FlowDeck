@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "fs"
 import { statePath, planningDir, codebaseDir, phasePlanPath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 import { codebaseStateTool } from "../../tools/codebase-state"
-import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
+import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
 
 export const newFeatureCommand = {
   name: "new-feature",
@@ -47,6 +47,7 @@ export const newFeatureCommand = {
     // Run impact radar on the feature description + plan content
     const featureText = args?.feature ?? readFileSync(planPath, "utf-8").split("\n").slice(0, 10).join(" ")
     const radar = runImpactRadar(dir, featureText)
+    const priorFailures = lookupPriorFailures(dir, "all", featureText)
 
     const codebaseResult = codebaseStateTool.execute({ action: "read", files: ["STACK.md", "ARCHITECTURE.md"] }, context)
 
@@ -70,6 +71,23 @@ export const newFeatureCommand = {
       },
       worktree: true,
       impact_radar: radar,
+      prior_failures: priorFailures.map(f => ({
+        id: f.id,
+        type: f.type,
+        description: f.description,
+        affected_paths: f.affected_paths,
+        root_cause: f.root_cause ?? null,
+        fix_applied: f.fix_applied ?? null,
+        recurrence_count: f.recurrence_count,
+      })),
+      post_execution: {
+        step: "record",
+        agent: "orchestrator",
+        actions: [
+          { tool: "repo-memory", action: "record", note: "add new module to MEMORY.json" },
+          { tool: "failure-replay", action: "record", condition: "if any build, test, or deployment failure occurred during this feature", note: "log to FAILURES.json for future reference" },
+        ],
+      },
     }
 
     if (args?.json) {
@@ -82,16 +100,30 @@ export const newFeatureCommand = {
 
     const radarLines = impactRadarSummaryLines(radar)
 
+    const priorFailureLines: string[] = priorFailures.length > 0
+      ? [
+          "─".repeat(55),
+          `  Prior failures in this area (${priorFailures.length}):`,
+          ...priorFailures.map(f => {
+            const rc = f.recurrence_count > 1 ? ` (×${f.recurrence_count})` : ""
+            const cause = f.root_cause ? ` — ${f.root_cause.substring(0, 60)}` : ""
+            return `  ⚠ [${f.id}]${rc}${cause}`
+          }),
+        ]
+      : []
+
     const tableLines = [
       "═".repeat(55),
       `New Feature: phase ${phase}`,
       "─".repeat(55),
       `  Guard: .planning/ ✓  .codebase/ ✓  plan_confirmed ✓`,
+      ...priorFailureLines,
       ...radarLines,
       "─".repeat(55),
       "  orchestrator → coordinates execution",
       "  parallel:     → @coder + @researcher",
       "  sequential:   → @reviewer, @tester",
+      "  post-exec:    → record module (repo-memory) + any failures (failure-replay)",
       "─".repeat(55),
       `  plan: ${planPath.split("/").pop()}`,
       "═".repeat(55)
@@ -105,6 +137,7 @@ export const newFeatureCommand = {
       phase,
       plan_file: planPath,
       impact_radar: radar,
+      prior_failures: config.prior_failures,
       meta: { formatted: "table", timestamp: timestamp() }
     }
   }
