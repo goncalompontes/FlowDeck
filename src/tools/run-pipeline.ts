@@ -39,62 +39,85 @@ export function createRunPipelineTool(client: OpencodeClient) {
       let carryContext = args.initial_context ?? ""
       let aborted = false
 
-      for (const step of args.steps) {
-        if (context.abort.aborted) {
-          aborted = true
-          break
+      // Track inflight child session so abort can cancel it mid-execution
+      let inflightChildId: string | null = null
+      const abortHandler = () => {
+        if (inflightChildId) {
+          client.session.abort({
+            path: { id: inflightChildId },
+            query: { directory: context.directory },
+          }).catch(() => {})
         }
+      }
+      context.abort.addEventListener("abort", abortHandler)
 
-        const stepStart = Date.now()
-        const stepInput = carryContext
-          ? `${carryContext}\n\n---\n\n${step.prompt}`
-          : step.prompt
+      try {
+        for (const step of args.steps) {
+          if (context.abort.aborted) {
+            aborted = true
+            break
+          }
 
-        // Fresh session per step — prevents cumulative hidden state
-        const createRes = await client.session.create({
-          body: { parentID: context.sessionID, title: `${step.agent}-pipeline` },
-          query: { directory: context.directory },
-        })
+          const stepStart = Date.now()
+          const stepInput = carryContext
+            ? `${carryContext}\n\n---\n\n${step.prompt}`
+            : step.prompt
 
-        if (createRes.error || !createRes.data?.id) {
-          const errMsg = `Failed to create session: ${(createRes.error as any)?.detail ?? "unknown"}`
-          trace.push({ agent: step.agent, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
-          aborted = true
-          break
+          // Fresh session per step — prevents cumulative hidden state
+          const createRes = await client.session.create({
+            body: { parentID: context.sessionID, title: `${step.agent}-pipeline` },
+            query: { directory: context.directory },
+          })
+
+          if (createRes.error || !createRes.data?.id) {
+            const errMsg = `Failed to create session: ${(createRes.error as any)?.detail ?? "unknown"}`
+            trace.push({ agent: step.agent, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
+            aborted = true
+            break
+          }
+
+          inflightChildId = createRes.data.id
+
+          const promptRes = await client.session.prompt({
+            path: { id: inflightChildId },
+            body: {
+              agent: step.agent,
+              parts: [{ type: "text", text: stepInput }],
+              tools: { question: false },
+            },
+            query: { directory: context.directory },
+          })
+
+          inflightChildId = null
+
+          if (context.abort.aborted) {
+            aborted = true
+            break
+          }
+
+          if (promptRes.error) {
+            const errMsg = `Prompt failed: ${(promptRes.error as any)?.detail ?? "unknown"}`
+            trace.push({ agent: step.agent, session_id: createRes.data.id, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
+            if (args.abort_on_failure) { aborted = true; break }
+            continue
+          }
+
+          const info = promptRes.data?.info
+          if (info?.error) {
+            const errMsg = `Agent error: ${JSON.stringify(info.error)}`
+            trace.push({ agent: step.agent, session_id: createRes.data.id, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
+            if (args.abort_on_failure) { aborted = true; break }
+            continue
+          }
+
+          const output = extractText((promptRes.data?.parts ?? []) as Array<{ type: string; text?: string }>)
+          trace.push({ agent: step.agent, session_id: createRes.data.id, input: stepInput, output: output || "(no text output)", duration_ms: Date.now() - stepStart, success: true })
+
+          // Pass this step's output as context to the next step
+          carryContext = output
         }
-
-        const childId = createRes.data.id
-
-        const promptRes = await client.session.prompt({
-          path: { id: childId },
-          body: {
-            agent: step.agent,
-            parts: [{ type: "text", text: stepInput }],
-            tools: { question: false },
-          },
-          query: { directory: context.directory },
-        })
-
-        if (promptRes.error) {
-          const errMsg = `Prompt failed: ${(promptRes.error as any)?.detail ?? "unknown"}`
-          trace.push({ agent: step.agent, session_id: childId, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
-          if (args.abort_on_failure) { aborted = true; break }
-          continue
-        }
-
-        const info = promptRes.data?.info
-        if (info?.error) {
-          const errMsg = `Agent error: ${JSON.stringify(info.error)}`
-          trace.push({ agent: step.agent, session_id: childId, input: stepInput, output: errMsg, duration_ms: Date.now() - stepStart, success: false })
-          if (args.abort_on_failure) { aborted = true; break }
-          continue
-        }
-
-        const output = extractText((promptRes.data?.parts ?? []) as Array<{ type: string; text?: string }>)
-        trace.push({ agent: step.agent, session_id: childId, input: stepInput, output: output || "(no text output)", duration_ms: Date.now() - stepStart, success: true })
-
-        // Pass this step's output as context to the next step
-        carryContext = output
+      } finally {
+        context.abort.removeEventListener("abort", abortHandler)
       }
 
       return JSON.stringify({

@@ -176,4 +176,52 @@ For full feature work, prefer `/fd-new-feature` or direct `@parallel-coordinator
 
 ---
 
+## Using the `delegate` Tool
+
+The `delegate` tool runs a single agent in an isolated child session and returns its output. Use it when you need a focused sub-task completed by a specific agent without disrupting the current session context:
+
+```
+Use the delegate tool to ask @security-auditor to review src/auth/login.ts
+and report back any vulnerabilities found.
+```
+
+```
+Use the delegate tool with context "existing schema: ..." to ask @architect to
+propose a migration plan.
+```
+
+`delegate` supports an optional `context` field — any string prepended to the agent's prompt. This is useful for passing output from a prior step without polluting the current conversation.
+
+---
+
+## Using the `run-pipeline` Tool
+
+The `run-pipeline` tool chains agents sequentially: each step's output becomes part of the next step's input. This is the right tool when tasks must happen in order and each depends on the previous result:
+
+```
+Use the run-pipeline tool with steps:
+  1. agent: planner, prompt: "Analyze the codebase and produce an implementation plan for the auth refactor"
+  2. agent: coder, prompt: "Implement the plan"
+  3. agent: reviewer, prompt: "Review the implementation for correctness and security"
+```
+
+Key behaviors:
+- Each step gets its own fresh child session (no hidden state accumulates between steps)
+- The previous step's text output is automatically prepended to the next step's prompt
+- Set `abort_on_failure: false` to continue the pipeline even if a step fails
+- Provide `initial_context` to seed the first step with prior information
+
+---
+
+## Implementation Notes
+
+All three dispatch tools (`run-parallel`, `delegate`, `run-pipeline`) create real OpenCode child sessions via `client.session.create` and `client.session.prompt`. They:
+
+- Use `parentID` to link child sessions to the current session
+- Check both transport-level errors (`response.error`) and agent-level errors (`response.data.info.error`)
+- Register an abort listener on the parent context so child sessions are cancelled if the parent aborts
+- Return structured JSON with per-task/step results including `session_id`, `success`, and `duration_ms`
+
+---
+
 ← [Back to Index](index.md)

@@ -277,4 +277,41 @@ describe("createRunPipelineTool", () => {
     expect(result.steps[1].success).toBe(true)
     expect(result.aborted).toBe(false)
   })
+
+  it("aborts inflight child session when parent abort fires mid-step", async () => {
+    const client = makeClient()
+    let resolvePrompt!: (v: any) => void
+    client.session.create.mockResolvedValue({ data: { id: "inflight-child" }, error: null })
+    client.session.prompt.mockReturnValueOnce(new Promise(res => { resolvePrompt = res }))
+
+    const tool = createRunPipelineTool(client as any)
+    const abortCtrl = new AbortController()
+    const ctx = {
+      sessionID: "parent-session",
+      messageID: "msg-0",
+      agent: "test-agent",
+      directory: "/test/dir",
+      worktree: "/test/dir",
+      abort: abortCtrl.signal,
+      metadata: vi.fn(),
+      ask: vi.fn(),
+    }
+
+    const execPromise = tool.execute(
+      { steps: [{ agent: "planner", prompt: "Plan" }], abort_on_failure: true },
+      ctx as any,
+    )
+
+    // Let create + prompt start
+    await Promise.resolve()
+    await Promise.resolve()
+
+    abortCtrl.abort()
+    resolvePrompt({ data: { info: {}, parts: [] }, error: null })
+    await execPromise
+
+    expect(client.session.abort).toHaveBeenCalledWith(
+      expect.objectContaining({ path: { id: "inflight-child" } }),
+    )
+  })
 })
