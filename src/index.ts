@@ -26,6 +26,7 @@ import { discussCommand } from "./commands/planning/discuss"
 import { planCommand } from "./commands/planning/plan"
 import { roadmapCommand } from "./commands/planning/roadmap"
 import { dashboardCommand } from "./commands/planning/dashboard"
+import { askCommand } from "./commands/planning/ask"
 import { newFeatureCommand } from "./commands/execution/new-feature"
 import { fixBugCommand } from "./commands/execution/fix-bug"
 import { reviewCodeCommand } from "./commands/execution/review-code"
@@ -63,6 +64,7 @@ const server: Plugin = async (input, _options) => {
     planCommand,
     roadmapCommand,
     dashboardCommand,
+    askCommand,
     newFeatureCommand,
     fixBugCommand,
     reviewCodeCommand,
