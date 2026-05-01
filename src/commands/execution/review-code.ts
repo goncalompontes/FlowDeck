@@ -1,5 +1,6 @@
 import { existsSync } from "fs"
 import { statePath, planningDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
+import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
 
 export const reviewCodeCommand = {
   name: "review-code",
@@ -18,8 +19,6 @@ export const reviewCodeCommand = {
     const scope = args?.scope || "all"
     const state = readPlanningState(dir)
 
-    const workflow = "review-code-flow.md"
-
     if (scope.includes("/") && !scope.startsWith("./")) {
       return {
         error: "Invalid scope: absolute paths not allowed",
@@ -27,6 +26,11 @@ export const reviewCodeCommand = {
         hint: "Use relative paths like ./src or module name"
       }
     }
+
+    // Run impact radar on the scope being reviewed
+    const radar = runImpactRadar(dir, scope !== "all" ? scope : "")
+
+    const workflow = "review-code-flow.md"
 
     const config = {
       agents: [
@@ -39,7 +43,8 @@ export const reviewCodeCommand = {
         critical: "reviewer.critical + researcher.critical",
         major: "reviewer.major + researcher.major",
         minor: "reviewer.minor + tester.minor"
-      }
+      },
+      impact_radar: radar,
     }
 
     if (args?.json) {
@@ -50,6 +55,8 @@ export const reviewCodeCommand = {
       }
     }
 
+    const radarLines = impactRadarSummaryLines(radar)
+
     const tableLines = [
       "─".repeat(50),
       `Code Review: scope=${scope}`,
@@ -58,6 +65,7 @@ export const reviewCodeCommand = {
       "  reviewer  → quality, security, conventions",
       "  researcher → API contracts, edge cases",
       "  tester    → test coverage",
+      ...radarLines,
       "─".repeat(50),
       "Aggregating results into critical/major/minor report...",
       "═".repeat(50)
@@ -69,6 +77,7 @@ export const reviewCodeCommand = {
       workflow,
       config,
       phase: state.phase,
+      impact_radar: radar,
       meta: { formatted: "table", timestamp: timestamp() }
     }
   }
