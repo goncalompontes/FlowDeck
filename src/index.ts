@@ -43,6 +43,9 @@ import { volatilityMapCommand } from "./commands/intelligence/volatility-map-cmd
 import { regressionPredictCommand } from "./commands/intelligence/regression-predict"
 import { testGapCommand } from "./commands/intelligence/test-gap"
 import { reviewRouteCommand } from "./commands/intelligence/review-route"
+import { analyzeChangeCommand } from "./commands/analysis/analyze-change"
+import { guardedEditCommand } from "./commands/analysis/guarded-edit"
+import { evaluateRiskCommand } from "./commands/analysis/evaluate-risk"
 
 function parseArgs(rawArgs: string): Record<string, unknown> {
   if (!rawArgs || rawArgs.trim() === "") return {}
@@ -81,6 +84,10 @@ const server: Plugin = async (input, _options) => {
     regressionPredictCommand,
     testGapCommand,
     reviewRouteCommand,
+    // ── umbrella analysis commands ──────────────────────────────────────
+    analyzeChangeCommand,
+    guardedEditCommand,
+    evaluateRiskCommand,
   ]
 
   const commandMap: Record<string, { execute(context: any, args?: any): Promise<any> }> = {}

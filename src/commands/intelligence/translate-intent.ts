@@ -3,18 +3,18 @@ import { statePath, timestamp, readPlanningState } from "../../tools/planning-st
 
 export const translateIntentCommand = {
   name: "fd-translate-intent",
-  description: "Intent-to-Change Translator — converts vague requests like 'make checkout faster' into concrete, ranked implementation options with tradeoffs before coding starts",
-  async execute(context, args?: { intent?: string; json?: boolean }) {
+  description: "Intent-to-Change Translator — converts vague requests like 'make checkout faster' into 3–5 concrete, ranked implementation options with tradeoffs, assumptions, and clarifying questions",
+  async execute(context: any, args?: { intent?: string; "rank-options"?: boolean; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 
     if (!existsSync(sp)) {
-      return { error: "STATE.md not found. Run /new-project first.", code: "NOT_INITIALIZED" }
+      return { error: "STATE.md not found. Run /fd-new-project first.", code: "NOT_INITIALIZED" }
     }
 
     if (!args?.intent) {
       return {
-        error: "No intent provided. Use: /translate-intent {\"intent\": \"make checkout faster\"}",
+        error: "No intent provided. Use: /fd-translate-intent --intent \"make checkout faster\"",
         code: "NO_INTENT",
         hint: "Describe what you want in plain language",
       }
@@ -25,15 +25,17 @@ export const translateIntentCommand = {
     const config = {
       intent: args.intent,
       agents: [
-        { name: "architect", role: "decompose intent into ≤5 concrete implementation options" },
-        { name: "researcher", role: "fetch relevant codebase context and prior art for each option" },
-        { name: "reviewer", role: "rank options by impact/effort/risk and identify tradeoffs" },
+        { name: "architect", role: "decompose intent into 3–5 concrete implementation options, each with name, description, files_affected, effort (S/M/L), risk (low/med/high), and tradeoffs" },
+        { name: "researcher", role: "fetch relevant codebase context, prior art, and constraints for each option" },
+        { name: "reviewer", role: "rank options by impact/effort/risk; select recommended option; list assumptions and clarifying questions" },
       ],
       output_format: {
-        options: "ranked list with: name, description, files_affected, effort (S/M/L), risk (low/med/high), tradeoffs",
-        recommendation: "top option with rationale",
+        options: "ranked list (1–5) with: name, description, files_affected, effort, risk, tradeoffs",
+        recommended_option: "index of recommended option with rationale (e.g. 'Option 2 — best risk/effort ratio')",
+        assumptions: "list of assumptions made about the codebase, user intent, or constraints",
         clarifying_questions: "list any ambiguities that need user input before proceeding",
       },
+      rank_options: args["rank-options"] !== false,
       workflow: "translate-intent-flow.md",
     }
 
@@ -42,17 +44,21 @@ export const translateIntentCommand = {
     }
 
     const lines = [
-      "═".repeat(60),
-      "Intent-to-Change Translator",
-      "─".repeat(60),
+      "═".repeat(62),
+      "fd-translate-intent",
+      "─".repeat(62),
       `  Intent: "${args.intent}"`,
-      "─".repeat(60),
-      "  architect  → decompose into ≤5 concrete options",
+      "─".repeat(62),
+      "  architect  → decompose into 3–5 concrete options",
       "  researcher → fetch codebase context + prior art",
-      "  reviewer   → rank by impact / effort / risk",
-      "─".repeat(60),
-      "  Output: ranked options table with tradeoffs + recommendation",
-      "═".repeat(60),
+      "  reviewer   → rank by impact/effort/risk",
+      "─".repeat(62),
+      "  Output:",
+      "    • ranked options table (name, effort, risk, tradeoffs)",
+      "    • recommended option with rationale",
+      "    • assumptions the agent made",
+      "    • clarifying questions if intent is ambiguous",
+      "═".repeat(62),
     ]
 
     return { success: true, message: lines.join("\n"), config, phase: state.phase, meta: { formatted: "table", timestamp: timestamp() } }
