@@ -166,12 +166,28 @@ Changes are written back to `.planning/config.json` immediately.
 
 ---
 
+## Built-in MCP Servers
+
+FlowDeck automatically registers three free, read-only remote Model Context Protocol (MCP) servers to give your agents extended capabilities:
+
+| MCP | Endpoint | Purpose |
+|---|---|---|
+| **Context7** | `mcp.context7.com/mcp` | Fast library and API documentation lookup |
+| **Exa Websearch** | `mcp.exa.ai/mcp` | General web search capabilities |
+| **Grep.app** | `mcp.grep.app` | Global code search across open-source repositories |
+
+These are enabled by default. If you have API keys (e.g., `CONTEXT7_API_KEY`, `EXA_API_KEY`), FlowDeck will automatically inject them. To disable any of these, use the `FLOWDECK_DISABLE_MCP` environment variable (e.g., `FLOWDECK_DISABLE_MCP=context7,websearch`).
+
+---
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENCODE_CONFIG_DIR` | `~/.config/opencode` | Override the directory where FlowDeck looks for agents, skills, and commands |
 | `XDG_CONFIG_HOME` | `~/.config` | Standard XDG base directory; used to resolve `OPENCODE_CONFIG_DIR` when not explicitly set |
+| `FLOWDECK_CONTEXT_LIMIT` | `200000` | Token limit used by the Context Window Monitor to warn when context usage exceeds 70% |
+| `FLOWDECK_DISABLE_MCP` | (empty) | Comma-separated list of remote MCPs to disable. Valid options: `context7`, `websearch`, `grep_app` |
 
 ---
 

@@ -90,3 +90,25 @@ export function notifyCommandInteraction(command: string): void {
     )
   }
 }
+
+/**
+ * Fires a notification when the session becomes idle (task complete).
+ */
+export function notifySessionIdle(): void {
+  notify(
+    "FlowDeck Task Completed",
+    "Agent is idle and waiting for your next instruction",
+    "info"
+  )
+}
+
+/**
+ * Fires a notification when a permission is requested.
+ */
+export function notifyPermissionNeeded(tool: string): void {
+  notify(
+    "FlowDeck Permission Required",
+    `Agent needs approval to use tool: ${tool}`,
+    "critical"
+  )
+}

@@ -18,6 +18,8 @@ FlowDeck adds a structured, multi-agent development workflow to OpenCode. It coo
 - 🗂️ **Multi-repo support** — coordinate changes across multiple repositories in one session
 - 🔔 **System notifications** — desktop alerts when long-running tasks complete
 - 🛡️ **AI Safety layer** — patch trust scoring, edit gates, arch constraint enforcement, failure replay, and regression prediction built into every workflow
+- 🪝 **Deep System Hooks** — context window monitoring, session idle summaries, shell environment injection, and structured compaction to prevent context loss
+- 🌐 **Built-in MCPs** — Context7 (docs), Exa (web search), and Grep.app (code search) included and enabled by default
 
 ---
 

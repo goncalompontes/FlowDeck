@@ -1,76 +1,104 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OPENCODE_DIR="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
-MANIFEST_FILE="$OPENCODE_DIR/.flowdeck-manifest.json"
+is_local=false
+if [[ "${1:-}" == "--local" ]]; then
+  is_local=true
+fi
+
+if [ "$is_local" = true ]; then
+  OPENCODE_DIR="$PWD/.opencode"
+else
+  OPENCODE_DIR="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
+fi
+
 CACHE_GLOB="$HOME/.cache/opencode/packages/opencode-flowdeck@*"
+PKG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 info()    { echo "$(tput setaf 4 2>/dev/null || true)[INFO]$(tput sgr0 2>/dev/null || true) $*"; }
 success() { echo "$(tput setaf 2 2>/dev/null || true)[OK]$(tput sgr0 2>/dev/null || true) $*"; }
 warn()    { echo "$(tput setaf 3 2>/dev/null || true)[WARN]$(tput sgr0 2>/dev/null || true) $*"; }
-error()   { echo "$(tput setaf 1 2>/dev/null || true)[ERROR]$(tput sgr0 2>/dev/null || true) $*" >&2; exit 1; }
 
-if [ ! -f "$MANIFEST_FILE" ]; then
-  warn "No manifest found at $MANIFEST_FILE"
-  warn "FlowDeck may not be installed, or was installed without manifest support."
-  warn "To manually uninstall, remove FlowDeck agents/skills/commands from:"
-  warn "  $OPENCODE_DIR/agent/"
-  warn "  $OPENCODE_DIR/skills/"
-  warn "  $OPENCODE_DIR/command/"
-  exit 1
+if [ ! -d "$OPENCODE_DIR" ]; then
+  warn "OpenCode directory not found at $OPENCODE_DIR"
+  exit 0
 fi
 
-info "Reading manifest: $MANIFEST_FILE"
+info "Uninstalling FlowDeck from: $OPENCODE_DIR"
 
-# Remove installed files and restore any backups
+# Run the node-based uninstall logic (same logic as bin/flowdeck.js --uninstall)
 node -e "
 const fs = require('fs');
-const manifest = JSON.parse(fs.readFileSync('$MANIFEST_FILE', 'utf8'));
-let removed = 0, restored = 0, skipped = 0;
+const path = require('path');
 
-for (const entry of manifest.installed) {
-  if (!entry || !entry.dest) continue;
-  if (fs.existsSync(entry.dest)) {
-    fs.unlinkSync(entry.dest);
-    removed++;
-    if (entry.backup && fs.existsSync(entry.backup)) {
-      fs.renameSync(entry.backup, entry.dest);
-      console.log('[INFO] Restored: ' + require('path').basename(entry.dest));
-      restored++;
-    } else {
-      console.log('[INFO] Removed: ' + require('path').basename(entry.dest));
+const configDir = '$OPENCODE_DIR';
+const pkgRoot = '$PKG_ROOT';
+
+let removedFiles = 0;
+let removedDirs = 0;
+
+// Remove Agents
+const agentSrc = path.join(pkgRoot, 'agents');
+const agentDest = path.join(configDir, 'agent');
+if (fs.existsSync(agentSrc) && fs.existsSync(agentDest)) {
+  for (const f of fs.readdirSync(agentSrc)) {
+    if (!f.endsWith('.md')) continue;
+    const t = path.join(agentDest, f);
+    if (fs.existsSync(t)) {
+      fs.unlinkSync(t);
+      removedFiles++;
     }
-  } else {
-    skipped++;
-  }
-  // Clean up orphaned backup if dest was already gone
-  if (entry.backup && fs.existsSync(entry.backup) && !fs.existsSync(entry.dest)) {
-    fs.renameSync(entry.backup, entry.dest);
-    restored++;
   }
 }
-console.log('[OK] Removed: ' + removed + ', Restored: ' + restored + ', Skipped: ' + skipped);
-"
 
-# Remove manifest file
-rm -f "$MANIFEST_FILE"
-info "Removed manifest"
+// Remove Commands
+const cmdSrc = path.join(pkgRoot, 'commands');
+const cmdDest = path.join(configDir, 'command');
+if (fs.existsSync(cmdSrc) && fs.existsSync(cmdDest)) {
+  for (const f of fs.readdirSync(cmdSrc)) {
+    if (!f.endsWith('.md')) continue;
+    const t = path.join(cmdDest, f);
+    if (fs.existsSync(t)) {
+      fs.unlinkSync(t);
+      removedFiles++;
+    }
+  }
+}
 
-# Remove plugin from opencode.json
-node -e "
-const fs = require('fs');
-const configPath = require('path').join('$OPENCODE_DIR', 'opencode.json');
-if (!fs.existsSync(configPath)) process.exit(0);
-let config;
-try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch(e) { process.exit(0); }
-if (!Array.isArray(config.plugin)) process.exit(0);
-const before = config.plugin.length;
-config.plugin = config.plugin.filter(p => p !== 'opencode-flowdeck@latest' && p !== 'opencode-flowdeck');
-if (config.plugin.length < before) {
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  console.log('[OK] Removed opencode-flowdeck from plugin list');
-} else {
-  console.log('[INFO] opencode-flowdeck was not in plugin list');
+// Remove Skills
+const skillsSrc = path.join(pkgRoot, 'skills');
+const skillsDest = path.join(configDir, 'skills');
+if (fs.existsSync(skillsSrc) && fs.existsSync(skillsDest)) {
+  for (const d of fs.readdirSync(skillsSrc)) {
+    const s = path.join(skillsSrc, d);
+    if (fs.statSync(s).isDirectory()) {
+      const t = path.join(skillsDest, d);
+      if (fs.existsSync(t)) {
+        fs.rmSync(t, { recursive: true, force: true });
+        removedDirs++;
+      }
+    }
+  }
+}
+
+console.log('[OK] Removed ' + removedFiles + ' files and ' + removedDirs + ' skill directories');
+
+// Remove plugin from opencode.json
+const configFile = path.join(configDir, 'opencode.json');
+if (fs.existsSync(configFile)) {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+    if (Array.isArray(cfg.plugin)) {
+      const before = cfg.plugin.length;
+      cfg.plugin = cfg.plugin.filter(p => p !== 'opencode-flowdeck' && !p.startsWith('opencode-flowdeck@'));
+      if (cfg.plugin.length < before) {
+        fs.writeFileSync(configFile, JSON.stringify(cfg, null, 2) + '\n');
+        console.log('[OK] Removed opencode-flowdeck from plugin list');
+      } else {
+        console.log('[INFO] opencode-flowdeck was not in plugin list');
+      }
+    }
+  } catch(e) { /* ignore parse errors */ }
 }
 "
 
@@ -83,4 +111,3 @@ for cache_dir in $CACHE_GLOB; do
 done 2>/dev/null || true
 
 success "FlowDeck uninstalled successfully."
-info "OpenCode configuration restored."

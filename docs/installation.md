@@ -121,8 +121,9 @@ npm update -g opencode-flowdeck && opencode-flowdeck install
 ```bash
 bash uninstall.sh
 ```
+You can also add the `--local` flag to uninstall from a local project `.opencode/` directory instead of the global config.
 
-The uninstall script reads the manifest written during installation from `~/.cache/opencode/packages/opencode-flowdeck@latest/`, removes only the files FlowDeck placed there, and restores any originals that were backed up. It does not delete your project's `.planning/` directory or any state files.
+The uninstall script automatically scans the FlowDeck package and safely removes any installed agents, skills, and commands from your OpenCode config directory. It does not delete your project's `.planning/` directory or any state files.
 
 ---
 
