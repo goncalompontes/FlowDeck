@@ -1,5 +1,5 @@
 {
-  "name": "opencode-flowdeck",
+  "name": "@dv.nghiem/opencode-flowdeck",
   "version": "0.1.0",
   "description": "FlowDeck — structured planning and execution workflows for OpenCode",
   "type": "module",
