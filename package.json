@@ -20,7 +20,7 @@
     "bin",
     "agents",
     "skills",
-    "commands",
+    "docs",
     "workflows",
     "rules",
     "postinstall.mjs"

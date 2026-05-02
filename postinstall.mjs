@@ -135,21 +135,6 @@ function main() {
     console.log(`✓ Installed ${count} FlowDeck skills → ${skillsDest}`);
   }
 
-  // Commands → ~/.config/opencode/command/
-  const cmdSrc = join(pkgRoot, "commands");
-  const cmdDest = join(configDir, "command");
-  if (existsSync(cmdSrc)) {
-    mkdirSync(cmdDest, { recursive: true });
-    let count = 0;
-    for (const f of readdirSync(cmdSrc)) {
-      if (!f.endsWith(".md")) continue;
-      copyFileSync(join(cmdSrc, f), join(cmdDest, f));
-      count++;
-      installed++;
-    }
-    console.log(`✓ Installed ${count} FlowDeck commands → ${cmdDest}`);
-  }
-
   // Register plugin in opencode.json
   const added = registerPlugin(configDir, "opencode-flowdeck");
   if (added) {

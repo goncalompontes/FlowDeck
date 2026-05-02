@@ -51,6 +51,7 @@ import { progressCommand } from "./commands/state/progress"
 import { resumeCommand } from "./commands/state/resume"
 import { checkpointCommand } from "./commands/state/checkpoint"
 import { workspaceCommands } from "./commands/state/workspace-commands"
+import { multiRepoCommand } from "./commands/state/multi-repo"
 import { impactRadarCommand } from "./commands/intelligence/impact-radar"
 import { blastRadiusCommand } from "./commands/intelligence/blast-radius"
 import { translateIntentCommand } from "./commands/intelligence/translate-intent"
@@ -112,6 +113,7 @@ const server: Plugin = async (input, _options) => {
     resumeCommand,
     checkpointCommand,
     ...workspaceCommands,
+    multiRepoCommand,
     impactRadarCommand,
     blastRadiusCommand,
     translateIntentCommand,
