@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from "fs"
 import { join } from "path"
 
@@ -50,7 +50,7 @@ async function codebaseExists(dir: string): Promise<{ exists: boolean; files: st
   return { exists: true, files }
 }
 
-export const codebaseStateTool = tool({
+export const codebaseStateTool: ToolDefinition = tool({
   description: "Manage .codebase/ directory: read files, write files, check existence",
   args: {
     action: tool.schema.enum(["read", "write", "exists"]),

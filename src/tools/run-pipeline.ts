@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import type { OpencodeClient } from "@opencode-ai/sdk"
 
 interface PipelineStep {
@@ -22,7 +22,7 @@ function extractText(parts: Array<{ type: string; text?: string }>): string {
     .join("\n")
 }
 
-export function createRunPipelineTool(client: OpencodeClient) {
+export function createRunPipelineTool(client: OpencodeClient): ToolDefinition {
   return tool({
     description: "Run agents in sequential pipeline. Each step's output is appended to the next step's context. One fresh child session per step. Returns full trace with session ID, input/output/duration per step.",
     args: {

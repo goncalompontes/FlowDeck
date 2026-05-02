@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import type { OpencodeClient } from "@opencode-ai/sdk"
 
 function extractText(parts: Array<{ type: string; text?: string }>): string {
@@ -8,7 +8,7 @@ function extractText(parts: Array<{ type: string; text?: string }>): string {
     .join("\n")
 }
 
-export function createDelegateTool(client: OpencodeClient) {
+export function createDelegateTool(client: OpencodeClient): ToolDefinition {
   return tool({
     description: "Delegate a task to a single agent via a child session. Returns the agent's output.",
     args: {

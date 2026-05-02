@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "./codebase-state"
@@ -51,7 +51,7 @@ function stabilityLabel(churn: number, hotfixes: number, todos: number): Volatil
   return "stable"
 }
 
-export const volatilityMapTool = tool({
+export const volatilityMapTool: ToolDefinition = tool({
   description: "Codebase Volatility Map: read/write/query .codebase/VOLATILITY.json — highlights unstable zones based on churn, hotfix frequency, and TODO clusters",
   args: {
     action: tool.schema.enum(["read", "write", "query_hotspots", "update_entry"]),

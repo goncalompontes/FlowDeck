@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "./codebase-state"
@@ -44,7 +44,7 @@ function writeStore(directory: string, store: FailureStore): void {
   writeFileSync(failuresPath(directory), JSON.stringify(store, null, 2), "utf-8")
 }
 
-export const failureReplayTool = tool({
+export const failureReplayTool: ToolDefinition = tool({
   description: "Failure Replay Engine: record and query past failures (reverted commits, failed deployments, flaky tests, bug fixes) in .codebase/FAILURES.json so the agent avoids repeating mistakes",
   args: {
     action: tool.schema.enum(["record", "query", "list", "mark_resolved"]),

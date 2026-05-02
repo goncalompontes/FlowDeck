@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "./codebase-state"
@@ -44,7 +44,7 @@ function writeStore(directory: string, store: PolicyStore): void {
   writeFileSync(policiesPath(directory), JSON.stringify(store, null, 2), "utf-8")
 }
 
-export const policyEngineTool = tool({
+export const policyEngineTool: ToolDefinition = tool({
   description: "Self-Healing Policy Engine: manage .codebase/POLICIES.json — add, list, query, toggle, and record violations of editing policies learned from past failures",
   args: {
     action: tool.schema.enum(["list", "add", "record_violation", "toggle", "query"]),

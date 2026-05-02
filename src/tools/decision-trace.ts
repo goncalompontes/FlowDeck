@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "./codebase-state"
@@ -33,7 +33,7 @@ function readDecisions(directory: string): DecisionEntry[] {
     .filter(Boolean)
 }
 
-export const decisionTraceTool = tool({
+export const decisionTraceTool: ToolDefinition = tool({
   description: "Decision Trace: record why the agent changed something, what evidence was used, and assumptions made. Stored in .codebase/DECISIONS.jsonl for fast review.",
   args: {
     action: tool.schema.enum(["record", "query", "get_for_file"]),

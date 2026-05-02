@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import type { OpencodeClient } from "@opencode-ai/sdk"
 
 interface ParallelResult {
@@ -17,7 +17,7 @@ function extractText(parts: Array<{ type: string; text?: string }>): string {
     .join("\n")
 }
 
-export function createRunParallelTool(client: OpencodeClient) {
+export function createRunParallelTool(client: OpencodeClient): ToolDefinition {
   return tool({
     description: "Run multiple agents in parallel. All tasks execute simultaneously via child sessions. Returns combined results with per-agent wall time. Partial results returned on failure.",
     args: {

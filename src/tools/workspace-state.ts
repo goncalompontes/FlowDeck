@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { join, dirname, resolve } from "path"
 import { findWorkspaceRoot, resolveSubRepos, getWorkspaceConfig, planningDir, statePath, timestamp } from "./planning-state-lib"
@@ -111,7 +111,7 @@ async function getSubRepoStateAction(dir: string, repoName: string | undefined, 
   }
 }
 
-export const workspaceStateTool = tool({
+export const workspaceStateTool: ToolDefinition = tool({
   description: "Manage workspace state across multiple repos: read workspace context, update context, list sub-repos, get sub-repo state",
   args: {
     action: tool.schema.enum(["read_context", "update_context", "list_repos", "get_repo_state"]),

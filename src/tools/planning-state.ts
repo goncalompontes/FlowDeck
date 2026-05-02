@@ -1,11 +1,11 @@
 import { join } from "path"
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { statePath, phasePlanPath, resultPath, planningDir, parseState, timestamp, appendHistory } from "./planning-state-lib"
 
 const PLAN_FILE = "PLAN.md"
 
-export const planningStateTool = tool({
+export const planningStateTool: ToolDefinition = tool({
   description: "Manage planning state: read STATE.md, update STATE.md, read PLAN.md, mark steps complete",
   args: {
     action: tool.schema.enum(["read", "update", "read_plan", "mark_complete"]),

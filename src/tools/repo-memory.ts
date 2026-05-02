@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "./codebase-state"
@@ -49,7 +49,7 @@ function writeMemory(directory: string, memory: RepoMemory): void {
   writeFileSync(memoryPath(directory), JSON.stringify(memory, null, 2), "utf-8")
 }
 
-export const repoMemoryTool = tool({
+export const repoMemoryTool: ToolDefinition = tool({
   description: "Repo Memory Graph: read/write/query persistent architecture graph in .codebase/MEMORY.json (modules, dependencies, ownership, bug history, conventions)",
   args: {
     action: tool.schema.enum(["read", "write_node", "query", "delete_node"]),
