@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
@@ -30,7 +31,7 @@ function routeReview(filePaths: string[], trustVerdict: TrustVerdict): ReviewerT
 export const reviewRouteCommand = {
   name: "fd-review-route",
   description: "Human Review Routing — route risky patches to the right reviewer type (security, backend, infra, domain-owner) based on change nature and patch trust score",
-  async execute(context, args?: { files?: string; change?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { files?: string; change?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

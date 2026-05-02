@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { writeFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import { planningDir } from "../../tools/planning-state-lib"
@@ -113,7 +114,7 @@ steps_pending: []
 export const newProjectCommand = {
   name: "fd-new-project",
   description: "Initialize .planning/ structure for greenfield projects",
-  async execute(context) {
+  async execute(context: CommandContext) {
     const dir = context.directory ?? process.cwd()
     const pd = planningDir(dir)
 

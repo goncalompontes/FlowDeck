@@ -1,10 +1,11 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync } from "fs"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const testGapCommand = {
   name: "fd-test-gap",
   description: "Test Gap Detector — identify areas of a proposed change weakly covered by tests and suggest the minimum high-value tests to add first",
-  async execute(context, args?: { scope?: string; change?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { scope?: string; change?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

@@ -1,12 +1,17 @@
+import type { CommandContext } from "../../types/command-context"
 import { spawn } from "child_process"
-import { existsSync, readFileSync, unlinkSync } from "fs"
+import { existsSync, readFileSync } from "fs"
 import path from "path"
+import { fileURLToPath } from "url"
 import { findOpenPort } from "../../dashboard/lib/port-finder"
+
+// Resolves to dist/dashboard/server.mjs regardless of where the package is installed
+const SERVER_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "dashboard", "server.mjs")
 
 export const dashboardCommand = {
   name: "fd-dashboard",
   description: "Open project dashboard in browser — displays phase progress, milestones, and blockers",
-  async execute(context, args?: { refresh?: boolean }) {
+  async execute(context: CommandContext, args?: { refresh?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const dashboardDir = path.join(dir, ".dashboard")
 
@@ -31,8 +36,7 @@ export const dashboardCommand = {
     const { port } = await findOpenPort(3456, 100)
 
     // Spawn detached server
-    const serverPath = path.join(dir, "plugin", "src", "dashboard", "server.ts")
-    const child = spawn("bun", [serverPath, `--port=${port}`, `--dir=${dir}`], {
+    const child = spawn("bun", [SERVER_PATH, `--port=${port}`, `--dir=${dir}`], {
       detached: true,
       stdio: "ignore",
     })

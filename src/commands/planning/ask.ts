@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { timestamp } from "../../tools/planning-state-lib"
 import { runImpactRadar } from "../../lib/impact-radar"
 import { existsSync } from "fs"
@@ -107,7 +108,7 @@ function pickRoute(task: string): RouteRule & { score: number } {
 export const askCommand = {
   name: "fd-ask",
   description: "Smart dispatch — routes a free-form task to the appropriate specialized agent without a workflow",
-  async execute(context, args?: { task?: string; agent?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { task?: string; agent?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
 
     if (!args?.task && !args?.agent) {

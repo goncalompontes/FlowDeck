@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readFileSync, writeFileSync } from "fs"
 import { join } from "path"
 import { planningDir, timestamp } from "../../tools/planning-state-lib"
@@ -44,7 +45,7 @@ const MODEL_PROFILES = {
 export const settingsCommand = {
   name: "fd-settings",
   description: "Interactive configurator for agent models, profiles, and workflow toggles",
-  async execute(context, args?: {
+  async execute(context: CommandContext, args?: {
     profile?: "quality" | "balanced" | "budget"
     agent?: string
     model?: string

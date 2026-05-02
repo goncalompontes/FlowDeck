@@ -72,8 +72,7 @@ export interface PlanningState {
 export type PlanningStateWithTDD = PlanningState & { tdd: TDDState }
 
 export function getTDDState(state: PlanningState): TDDState | undefined {
-  const tdd = state["tdd"]
-  return typeof tdd === "object" ? tdd as TDDState : undefined
+  return state.ttd
 }
 
 export function parseState(content: string): Record<string, unknown> {
@@ -190,8 +189,7 @@ export function updateTDDState(dir: string, updates: Partial<TDDState>): void {
   if (!existsSync(sp)) return
 
   const state = readPlanningState(dir)
-  const existingTdd = state["tdd"] as TDDState | undefined
-  const current: TDDState = existingTdd ?? {
+  const current: TDDState = state.ttd ?? {
     stage: "behavior",
     cycle: 1,
     behaviors: [],
@@ -222,7 +220,7 @@ export function updateTDDState(dir: string, updates: Partial<TDDState>): void {
 
 export function logTDDOverride(dir: string, stage: string, reason: string, override_by: string): void {
   const state = readPlanningState(dir)
-  const existingTdd = state["tdd"] as TDDState | undefined
+  const existingTdd = state.ttd
   if (!existingTdd) return
 
   const override: TDDOverride = {

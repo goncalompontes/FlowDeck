@@ -71,6 +71,19 @@ export function evaluatePolicies(dir: string, ctx: PolicyContext): PolicyViolati
     }
   }
 
+  // Evaluate TDD enforcement policies
+  for (const tddPolicy of TDD_POLICIES) {
+    if (matchesTrigger(tddPolicy.trigger, ctx)) {
+      violations.push({
+        policy_id: `tdd-${tddPolicy.name.replace(/\s+/g, "-").toLowerCase()}`,
+        policy_name: tddPolicy.name,
+        rule: tddPolicy.rule,
+        trigger: tddPolicy.trigger,
+        severity: tddPolicy.severity,
+      })
+    }
+  }
+
   return violations
 }
 
@@ -125,6 +138,54 @@ const FAILURE_RULES: Array<{
     trigger: "secrets file",
     rule: "Never write directly to .env or secrets files — use vault/config management",
     rationale: "Direct writes to secrets files risk credential leaks",
+  },
+]
+
+/**
+ * TDD Enforcement Policies
+ * These policies enforce test-first development discipline.
+ */
+const TDD_POLICIES: Array<{
+  name: string
+  trigger: string
+  rule: string
+  severity: "block" | "warn"
+}> = [
+  {
+    name: "No implementation without failing test",
+    trigger: "fd-new-feature",
+    rule: "Never begin implementation until a failing test exists for the target behavior",
+    severity: "warn",
+  },
+  {
+    name: "No refactor without green tests",
+    trigger: "refactor implementation",
+    rule: "Never refactor while tests are not green — maintain passing test state",
+    severity: "block",
+  },
+  {
+    name: "Bugfix requires regression test",
+    trigger: "fd-fix-bug",
+    rule: "Every bugfix must include a regression test unless override is explicitly granted",
+    severity: "warn",
+  },
+  {
+    name: "Missing tests are major findings",
+    trigger: "code review",
+    rule: "Flag missing or weak tests as major findings in code review — not minor",
+    severity: "warn",
+  },
+  {
+    name: "Deploy blocked without test coverage",
+    trigger: "fd-deploy-check",
+    rule: "Fail deploy check when expected tests are missing for changed code",
+    severity: "block",
+  },
+  {
+    name: "TDD override must be logged",
+    trigger: "override TDD",
+    rule: "Every TDD stage override must be logged in override_log and surfaced in review",
+    severity: "warn",
   },
 ]
 

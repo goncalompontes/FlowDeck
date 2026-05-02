@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync } from "fs"
 import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
@@ -5,7 +6,7 @@ import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tool
 export const volatilityMapCommand = {
   name: "fd-volatility-map",
   description: "Codebase Volatility Map — highlight unstable zones based on git churn, hotfix frequency, and unresolved TODO clusters. Updates .codebase/VOLATILITY.json.",
-  async execute(context, args?: { threshold?: "stable" | "moderate" | "volatile" | "critical"; json?: boolean }) {
+  async execute(context: CommandContext, args?: { threshold?: "stable" | "moderate" | "volatile" | "critical"; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

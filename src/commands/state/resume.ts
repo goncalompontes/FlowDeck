@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { statePath, planningDir, phasePlanPath, timestamp, parseState } from "../../tools/planning-state-lib"
@@ -6,7 +7,7 @@ import { confirmPrompt, skipResponse } from "../../lib/confirmation"
 export const resumeCommand = {
   name: "fd-resume",
   description: "Reload STATE.md + last PLAN.md + DISCUSS.md — brief user, PAUSE for confirmation, then continue from where stopped",
-  async execute(context, args?: { confirm?: boolean; json?: boolean; yes?: boolean }) {
+  async execute(context: CommandContext, args?: { confirm?: boolean; json?: boolean; yes?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
     const pd = planningDir(dir)

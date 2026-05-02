@@ -1,15 +1,16 @@
 import { existsSync, readFileSync } from "fs"
-import { statePath, planningDir, codebaseDir, phasePlanPath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
+import { statePath, planningDir, codebaseDir, phasePlanPath, timestamp, readPlanningState, updateTDDState, type TDDState, type PlanningStateWithTDD } from "../../tools/planning-state-lib"
 import { codebaseStateTool } from "../../tools/codebase-state"
 import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
 import { buildAgentConfig } from "../../services/model-router"
 import { startTrace } from "../../services/run-trace"
 import { appendEvent } from "../../services/telemetry"
+import type { CommandContext } from "../../types/command-context"
 
 export const newFeatureCommand = {
   name: "fd-new-feature",
   description: "Execute feature implementation — guard check, orchestrator coordination, parallel coder+researcher, reviewer, tester, STATE.md update",
-  async execute(context, args?: { feature?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { feature?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 
@@ -63,7 +64,22 @@ export const newFeatureCommand = {
       meta: { phase, plan_file: planPath },
     })
 
-    const codebaseResult = codebaseStateTool.execute({ action: "read", files: ["STACK.md", "ARCHITECTURE.md"] }, context)
+    // Initialize TDD state if not already set
+    let tddState = state["tdd"] as TDDState | undefined
+    if (!tddState) {
+      updateTDDState(dir, {
+        stage: "behavior",
+        cycle: 1,
+        behaviors: [],
+        regression_test_links: [],
+        override_log: [],
+        failing_tests: 0,
+        passing_tests: 0,
+      })
+      tddState = readPlanningState(dir)["tdd"]
+    }
+
+    const codebaseResult = codebaseStateTool.execute({ action: "read", files: ["STACK.md", "ARCHITECTURE.md"] }, context as any)
 
     // Build agent configs using model router (replaces hardcoded models)
     const riskScore = radar.score
@@ -131,16 +147,26 @@ export const newFeatureCommand = {
         ]
       : []
 
+    const tddStage = tddState ? tddState.stage.toUpperCase() : "NONE"
+    const tddFailing = tddState ? tddState.failing_tests : 0
+    const tddPassing = tddState ? tddState.passing_tests : 0
+    const tddBehaviors = tddState ? tddState.behaviors.length : 0
+    const tddCycles = tddState ? tddState.cycle : 0
+
     const tableLines = [
       "═".repeat(55),
       `New Feature: phase ${phase}`,
       "─".repeat(55),
       `  Guard: .planning/ ✓  .codebase/ ✓  plan_confirmed ✓`,
+      "─".repeat(55),
+      `  TDD Stage: ${tddStage} | Cycle: ${tddCycles}`,
+      `  Tests: ${tddFailing} failing | ${tddPassing} passing`,
+      `  Behaviors: ${tddBehaviors} defined`,
       ...priorFailureLines,
       ...radarLines,
       "─".repeat(55),
-      "  orchestrator → coordinates execution",
-      "  parallel:     → @coder + @researcher",
+      "  orchestrator → coordinates TDD execution",
+      "  TDD cycle:    → RED (write failing tests) → GREEN (minimum impl) → REFACTOR",
       "  sequential:   → @reviewer, @tester",
       "  post-exec:    → record module (repo-memory) + any failures (failure-replay)",
       "─".repeat(55),

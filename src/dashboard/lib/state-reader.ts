@@ -5,7 +5,7 @@ import { getCommandSummary, getRecentToolFailures } from "../../services/telemet
 import { listTraces } from "../../services/run-trace"
 import { getPendingApprovals } from "../../services/approval-manager"
 import { getStats } from "../../services/agent-performance"
-import type { Phase, DashboardData, TelemetrySummary, RecentRun, PendingApproval, AgentPerfSummary } from "../types"
+import type { Phase, DashboardData, TelemetrySummary, RecentRun, PendingApproval, AgentPerfSummary, TDDDashboardState } from "../types"
 
 function parsePhaseLine(line: string): Phase | null {
   const completeMatch = line.match(/\- \[x\] Phase (\d+): (.+)/)
@@ -162,5 +162,28 @@ export function readDashboardData(dir: string): DashboardData {
         avg_duration_ms: Math.round(e.total_duration_ms / e.runs),
       })) as AgentPerfSummary[],
     toolFailureCount: getRecentToolFailures(dir, 50).length,
+    tdd: buildTDDDashboardState(state as ReturnType<typeof readPlanningState> & { tdd?: { stage: string; cycle: number; behaviors: { status: string }[]; failing_tests: number; passing_tests: number; override_log: unknown[] } }),
+  }
+}
+
+/**
+ * Build TDD dashboard state from planning state.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildTDDDashboardState(state: any): TDDDashboardState | undefined {
+  if (!state.ttd) return undefined
+
+  const completedBehaviors = state.ttd.behaviors.filter((b: { status: string }) => b.status === "complete").length
+  const pendingBehaviors = state.ttd.behaviors.filter((b: { status: string }) => b.status !== "complete").length
+
+  return {
+    stage: state.ttd.stage,
+    cycle: state.ttd.cycle,
+    failing_tests: state.ttd.failing_tests,
+    passing_tests: state.ttd.passing_tests,
+    behaviors_completed: completedBehaviors,
+    behaviors_pending: pendingBehaviors,
+    bugs_missing_regression: 0, // TODO: compute from FAILURES.json
+    overrides_used: state.ttd.override_log.length,
   }
 }

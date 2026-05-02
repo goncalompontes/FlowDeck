@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync } from "fs"
 import { statePath, planningDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 import { runImpactRadar, impactRadarSummaryLines } from "../../lib/impact-radar"
@@ -6,7 +7,7 @@ import { evaluatePolicies, formatViolations } from "../../services/policy-compil
 export const reviewCodeCommand = {
   name: "fd-review-code",
   description: "Parallel reviewer + researcher + tester — aggregates into critical/major/minor report",
-  async execute(context, args?: { scope?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { scope?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 
@@ -41,15 +42,21 @@ export const reviewCodeCommand = {
 
     const config = {
       agents: [
-        { name: "reviewer", focus: "quality,security,conventions", severity: "critical,high" },
+        { name: "reviewer", focus: "quality,security,conventions,TDD_discipline", severity: "critical,high" },
         { name: "researcher", focus: "api contracts,edge cases" },
         { name: "tester", mode: "coverage" }
       ],
       scope,
       aggregate: {
         critical: "reviewer.critical + researcher.critical",
-        major: "reviewer.major + researcher.major",
+        major: "reviewer.major + researcher.major + tester.missing_tests",
         minor: "reviewer.minor + tester.minor"
+      },
+      tdd_checks: {
+        new_behavior_without_test: "flag as major",
+        bugfix_without_regression: "flag as critical",
+        implementation_larger_than_tests: "flag as major",
+        refactor_without_green: "flag as block",
       },
       impact_radar: radar,
       policy_violations: policyViolations,

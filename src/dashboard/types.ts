@@ -45,6 +45,17 @@ export interface AgentPerfSummary {
   avg_duration_ms: number
 }
 
+export interface TDDDashboardState {
+  stage: string
+  cycle: number
+  failing_tests: number
+  passing_tests: number
+  behaviors_completed: number
+  behaviors_pending: number
+  bugs_missing_regression: number
+  overrides_used: number
+}
+
 export interface DashboardData {
   project: string
   milestone: string
@@ -59,4 +70,6 @@ export interface DashboardData {
   pendingApprovals: PendingApproval[]
   agentPerf: AgentPerfSummary[]
   toolFailureCount: number
+  // TDD state
+  tdd?: TDDDashboardState
 }

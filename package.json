@@ -28,16 +28,24 @@
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --watch",
+    "prepublishOnly": "npm run build",
     "test": "bun test"
   },
   "keywords": ["opencode", "plugin", "ai", "workflow", "planning"],
-  "author": "",
+  "author": "DVNghiem",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DVNghiem/FlowDeck.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DVNghiem/FlowDeck/issues"
+  },
+  "homepage": "https://github.com/DVNghiem/FlowDeck#readme",
   "dependencies": {
     "@opencode-ai/plugin": "^1.4.0",
     "@opencode-ai/sdk": "^1.4.0",
-    "ejs": "^3.1.9",
-    "zod": "^3.25.0"
+    "ejs": "^3.1.9"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync } from "fs"
 import { statePath, timestamp } from "../../tools/planning-state-lib"
 import {
@@ -11,7 +12,7 @@ export const approveCommand = {
   name: "fd-approve",
   description: "Manage approval requests — list pending approvals, approve or reject a request by ID",
   async execute(
-    context,
+    context: CommandContext,
     args?: { id?: string; reject?: boolean; list?: boolean; recent?: boolean; json?: boolean }
   ) {
     const dir = context.directory ?? process.cwd()

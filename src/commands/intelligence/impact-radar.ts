@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
@@ -6,7 +7,7 @@ import { scorePatch } from "../../hooks/patch-trust"
 export const impactRadarCommand = {
   name: "fd-impact-radar",
   description: "Change Impact Radar — predict which files, modules, APIs, tests, and DB paths are likely affected before the AI edits anything",
-  async execute(context, args?: { change?: string; scope?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { change?: string; scope?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

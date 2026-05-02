@@ -4,7 +4,7 @@ import { join } from "path"
 import { volatilityMapTool } from "./volatility-map"
 
 const TMP = join(process.cwd(), ".test-tmp-volatility")
-const ctx = { directory: TMP }
+const ctx = { directory: TMP, sessionID: "test", messageID: "test", agent: "test", worktree: TMP, abort: new AbortController().signal } as any
 
 beforeEach(() => {
   if (existsSync(TMP)) rmSync(TMP, { recursive: true })

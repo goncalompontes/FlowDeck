@@ -14,6 +14,7 @@ export interface ImpactRadarResult {
   known_failures: Array<{ id: string; description: string; affected_paths: string[]; recurrence_count: number }>
   related_modules: Array<{ path: string; type: string; owner?: string }>
   risk_flag: boolean
+  score: number
   advisory: string | null
 }
 
@@ -76,7 +77,7 @@ export function runImpactRadar(dir: string, changeText: string): ImpactRadarResu
     ? `⚠ Impact Radar: ${hotspots.length} volatile zone(s) and ${known_failures.length} known failure(s) match this change. Review before proceeding.`
     : null
 
-  return { hotspots, known_failures, related_modules, risk_flag, advisory }
+  return { hotspots, known_failures, related_modules, risk_flag, advisory, score: risk_flag ? 0.7 : 0.3 }
 }
 
 export function impactRadarSummaryLines(radar: ImpactRadarResult): string[] {

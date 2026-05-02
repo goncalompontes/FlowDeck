@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { statePath, timestamp } from "../../tools/planning-state-lib"
 import { confirmPrompt } from "../../lib/confirmation"
@@ -5,7 +6,7 @@ import { confirmPrompt } from "../../lib/confirmation"
 export const checkpointCommand = {
   name: "fd-checkpoint",
   description: "Force-save current state to STATE.md — safe to close session",
-  async execute(context, args?: { yes?: boolean }) {
+  async execute(context: CommandContext, args?: { yes?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

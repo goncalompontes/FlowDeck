@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { tool } from "@opencode-ai/plugin"
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { join, resolve } from "path"
@@ -97,7 +98,7 @@ function renderStatusTable(repos: SubRepo[], repoStates: Record<string, Record<s
 export const statusCommand = {
   name: "fd-workspace status",
   description: "Display workspace overview: all repos, their current phase, status, and progress",
-  async execute(context, args?: { json?: boolean }) {
+  async execute(context: CommandContext, args?: { json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const workspaceRoot = findWorkspaceRoot(dir)
 
@@ -144,7 +145,7 @@ export const statusCommand = {
 export const syncCommand = {
   name: "fd-workspace sync",
   description: "Sync workspace root STATE.md with all sub-repo states (shared mode)",
-  async execute(context) {
+  async execute(context: CommandContext) {
     const dir = context.directory ?? process.cwd()
     const workspaceRoot = findWorkspaceRoot(dir)
 
@@ -226,7 +227,7 @@ export const syncCommand = {
 export const switchCommand = {
   name: "fd-workspace switch",
   description: "Switch current active repo in workspace context",
-  async execute(context, args?: { repo?: string }) {
+  async execute(context: CommandContext, args?: { repo?: string }) {
     const dir = context.directory ?? process.cwd()
 
     if (!args?.repo) {
@@ -273,7 +274,7 @@ export const switchCommand = {
 export const addCommand = {
   name: "fd-workspace add",
   description: "Add a repository path to workspace sub_repos",
-  async execute(context, args?: { path?: string }) {
+  async execute(context: CommandContext, args?: { path?: string }) {
     const dir = context.directory ?? process.cwd()
 
     if (!args?.path) {
@@ -320,7 +321,7 @@ export const addCommand = {
 export const removeCommand = {
   name: "fd-workspace remove",
   description: "Remove a repository from workspace sub_repos (by repo name, not path)",
-  async execute(context, args?: { repo?: string }) {
+  async execute(context: CommandContext, args?: { repo?: string }) {
     const dir = context.directory ?? process.cwd()
 
     if (!args?.repo) {
@@ -348,13 +349,13 @@ export const removeCommand = {
     }
 
     // Remove from sub_repos array (by original path, not resolved)
-    const originalPath = config.sub_repos.find(p => {
+    const originalPath = config.sub_repos.find((p: string) => {
       const resolvedP = resolve(workspaceRoot, p)
       return resolvedP === targetPath || getRepoName(resolvedP) === args.repo
     })
 
     if (originalPath) {
-      config.sub_repos = config.sub_repos.filter(p => p !== originalPath)
+      config.sub_repos = config.sub_repos.filter((p: string) => p !== originalPath)
       writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8")
     }
 
@@ -368,8 +369,8 @@ export const removeCommand = {
 export const defaultCommand = {
   name: "fd-workspace",
   description: "Workspace management commands (status, sync, switch, add, remove)",
-  async execute(context, args?: { subcommand?: string }) {
-    return statusCommand.execute(context, args)
+  async execute(context: CommandContext, args?: { subcommand?: string }) {
+    return statusCommand.execute(context, args as { json?: boolean } | undefined)
   },
 }
 

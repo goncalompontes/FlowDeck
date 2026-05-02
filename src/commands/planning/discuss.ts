@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { readFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import { planningDir, statePath } from "../../tools/planning-state-lib"
@@ -7,7 +8,7 @@ export const discussCommand = {
   name: "fd-discuss",
   description:
     "Extract requirements via @discusser Q&A — saves decisions to .planning/phases/phase-N/DISCUSS.md with D-XX numbering",
-  async execute(context, args?: { topic?: string }) {
+  async execute(context: CommandContext, args?: { topic?: string }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
     const pd = planningDir(dir)

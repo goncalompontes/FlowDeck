@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
@@ -18,7 +19,7 @@ const REGRESSION_CATEGORIES = [
 export const regressionPredictCommand = {
   name: "fd-regression-predict",
   description: "Regression Prediction — estimate the most likely regression categories (performance, auth, schema, UI states, async flows) for a proposed change",
-  async execute(context, args?: { change?: string; files?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { change?: string; files?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

@@ -5,7 +5,7 @@ import { repoMemoryTool } from "./repo-memory"
 
 const TMP = join(process.cwd(), ".test-tmp-memory")
 
-const ctx = { directory: TMP }
+const ctx = { directory: TMP, sessionID: "test", messageID: "test", agent: "test", worktree: TMP, abort: new AbortController().signal } as any
 
 function makeCtx() {
   return ctx

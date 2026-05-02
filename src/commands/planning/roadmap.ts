@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { readFileSync, existsSync, writeFileSync } from "fs"
 import { join } from "path"
 import { planningDir, timestamp, updatePlanningState, readPlanningState } from "../../tools/planning-state-lib"
@@ -6,7 +7,7 @@ import { confirmPrompt } from "../../lib/confirmation"
 export const roadmapCommand = {
   name: "fd-roadmap",
   description: "View or update project roadmap — displays ROADMAP.md, shows phase statuses, add new phase, or mark phase complete",
-  async execute(context, args?: { add?: string; complete?: string; json?: boolean; dryRun?: boolean; yes?: boolean; filter?: string; search?: string; sort?: string }) {
+  async execute(context: CommandContext, args?: { add?: string; complete?: string; json?: boolean; dryRun?: boolean; yes?: boolean; filter?: string; search?: string; sort?: string }) {
     const dir = context.directory ?? process.cwd()
     const pd = planningDir(dir)
     const roadmapPath = join(pd, "ROADMAP.md")

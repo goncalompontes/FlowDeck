@@ -1,10 +1,11 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync } from "fs"
 import { statePath, timestamp, readPlanningState } from "../../tools/planning-state-lib"
 
 export const writeDocsCommand = {
   name: "fd-write-docs",
   description: "Explore public APIs — writer drafts — reviewer accuracy check — writer final",
-  async execute(context, args?: { scope?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { scope?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

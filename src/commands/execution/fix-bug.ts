@@ -1,14 +1,15 @@
 import { existsSync, readFileSync } from "fs"
-import { statePath, planningDir, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
+import { statePath, planningDir, codebaseDir, timestamp, readPlanningState, updateTDDState, type PlanningStateWithTDD } from "../../tools/planning-state-lib"
 import { runImpactRadar, impactRadarSummaryLines, lookupPriorFailures } from "../../lib/impact-radar"
 import { startTrace } from "../../services/run-trace"
 import { appendEvent } from "../../services/telemetry"
 import { evaluatePolicies, learnFromFailure, formatViolations } from "../../services/policy-compiler"
+import type { CommandContext } from "../../types/command-context"
 
 export const fixBugCommand = {
   name: "fd-fix-bug",
   description: "Load STATE.md + ARCHITECTURE.md — explore scope — researcher — mini-plan — coder fix — regression test — reviewer confirmation",
-  async execute(context, args?: { scope?: string; bug?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { scope?: string; bug?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 
@@ -29,6 +30,21 @@ export const fixBugCommand = {
     }
 
     const state = readPlanningState(dir)
+
+    // Initialize TDD state if not already set
+    let tddState = state["tdd"] as ReturnType<typeof readPlanningState>["tdd"]
+    if (!tddState) {
+      updateTDDState(dir, {
+        stage: "behavior",
+        cycle: 1,
+        behaviors: [],
+        regression_test_links: [],
+        override_log: [],
+        failing_tests: 0,
+        passing_tests: 0,
+      })
+      tddState = readPlanningState(dir).tdd
+    }
 
     const cd = codebaseDir(dir)
     const archPath = `${cd}/ARCHITECTURE.md`
@@ -115,23 +131,35 @@ export const fixBugCommand = {
         ]
       : []
 
+    const tddStage = tddState ? tddState.stage.toUpperCase() : "NONE"
+    const tddFailing = tddState ? tddState.failing_tests : 0
+    const tddPassing = tddState ? tddState.passing_tests : 0
+    const tddOverrides = tddState ? tddState.override_log.length : 0
+
     const tableLines = [
       "─".repeat(55),
       `Fix Bug: scope=${scope}`,
-      `Phase ${state.phase} | 7-step workflow`,
+      `Phase ${state.phase} | TDD-enforced 12-step workflow`,
       "─".repeat(55),
-      "  [1] explore   → investigate via ARCHITECTURE.md",
-      "  [2] research  → identify root cause",
-      "  [3] mini-plan → orchestrator creates fix plan",
-      "  [4] fix       → @coder implements",
-      "  [5] regression → @tester writes/runs test (must pass)",
-      "  [6] verify    → @reviewer confirms (after regression)",
-      "  [7] record    → log resolved bug in FAILURES.json",
+      `  TDD Stage: ${tddStage} | Cycle: ${tddState?.cycle ?? 1}`,
+      `  Tests: ${tddFailing} failing | ${tddPassing} passing`,
+      `  Overrides used: ${tddOverrides}`,
+      "─".repeat(55),
+      "  [1-2] explore + research → isolate root cause",
+      "  [3] define behaviors → acceptance cases for fix",
+      "  [4] RED      → @tester writes failing regression test",
+      "  [5] confirm  → test MUST fail before proceeding",
+      "  [6] GREEN    → @coder implements minimum fix",
+      "  [7] confirm  → test MUST pass before proceeding",
+      "  [8] REFACTOR → clean up (only if GREEN)",
+      "  [9-10] verify → full test suite passes",
+      "  [11] review  → @reviewer confirms + TDD discipline",
+      "  [12] record  → log fix + regression test in FAILURES.json",
       ...priorFailureLines,
       ...radarLines,
       ...(policyViolations.length > 0 ? ["─".repeat(55), formatViolations(policyViolations)] : []),
       "─".repeat(55),
-      "⚠ Regression test MUST pass before reviewer confirms",
+      "⚠ GUARD: Regression test must fail RED → pass GREEN → refactor",
       "═".repeat(55)
     ]
 

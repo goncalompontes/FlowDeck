@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs"
 import { join } from "path"
 import { planningDir, statePath, phasePlanPath, timestamp } from "../../tools/planning-state-lib"
@@ -40,7 +41,7 @@ function buildImpactRadarSection(dir: string, changeText: string): string {
 export const planCommand = {
   name: "fd-plan",
   description: "Create detailed implementation plan from DISCUSS.md decisions — save PLAN.md, update STATE.md, require CONFIRM before execution",
-  async execute(context, args?: { phase?: string; confirm?: boolean; json?: boolean; yes?: boolean }) {
+  async execute(context: CommandContext, args?: { phase?: string; confirm?: boolean; json?: boolean; yes?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
     const pd = planningDir(dir)

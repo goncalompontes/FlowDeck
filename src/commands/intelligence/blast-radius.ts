@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tools/planning-state-lib"
@@ -5,7 +6,7 @@ import { statePath, codebaseDir, timestamp, readPlanningState } from "../../tool
 export const blastRadiusCommand = {
   name: "fd-blast-radius",
   description: "Blast Radius Preview — show likely downstream consequences of a proposed change including hidden dependencies and fragile integration points",
-  async execute(context, args?: { change?: string; depth?: string; json?: boolean }) {
+  async execute(context: CommandContext, args?: { change?: string; depth?: string; json?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const sp = statePath(dir)
 

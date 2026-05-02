@@ -1,3 +1,4 @@
+import type { CommandContext } from "../../types/command-context"
 import { existsSync, readdirSync, readFileSync, statSync, mkdirSync } from "fs"
 import { join, relative, extname } from "path"
 import { planningDir } from "../../tools/planning-state-lib"
@@ -34,7 +35,7 @@ function extractSignaturesFromFile(filePath: string): string[] {
 export const mapCodebaseCommand = {
   name: "fd-map-codebase",
   description: "Parallel analysis agents → .codebase/ docs (STACK, ARCHITECTURE, STRUCTURE, CONVENTIONS, TESTING, CONCERNS). Use --incremental to process only changed files.",
-  async execute(context, args?: { incremental?: boolean; yes?: boolean }) {
+  async execute(context: CommandContext, args?: { incremental?: boolean; yes?: boolean }) {
     const dir = context.directory ?? process.cwd()
     const pd = planningDir(dir)
     const incremental = args?.incremental === true
