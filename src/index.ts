@@ -11,6 +11,9 @@ import { failureReplayTool } from "./tools/failure-replay"
 import { decisionTraceTool } from "./tools/decision-trace"
 import { volatilityMapTool } from "./tools/volatility-map"
 import { policyEngineTool } from "./tools/policy-engine"
+import { hashEditTool } from "./tools/hash-edit"
+import { createCouncilTool } from "./tools/council"
+import { contextGeneratorTool } from "./tools/context-generator"
 
 import { guardRailsHook } from "./hooks/guard-rails"
 import { toolGuardHook } from "./hooks/tool-guard"
@@ -33,6 +36,7 @@ import { createFlowDeckMcps } from "./mcp/index"
 import { newProjectCommand } from "./commands/setup/new-project"
 import { mapCodebaseCommand } from "./commands/setup/map-codebase"
 import { settingsCommand } from "./commands/setup/settings"
+import { doctorCommand } from "./commands/setup/doctor"
 import { discussCommand } from "./commands/planning/discuss"
 import { planCommand } from "./commands/planning/plan"
 import { roadmapCommand } from "./commands/planning/roadmap"
@@ -77,6 +81,7 @@ const server: Plugin = async (input, _options) => {
   const runParallelTool = createRunParallelTool(client)
   const runPipelineTool = createRunPipelineTool(client)
   const delegateTool = createDelegateTool(client)
+  const councilTool = createCouncilTool(client)
 
   // Instantiate session-scoped file tracker for the hooks
   const fileTracker = new SessionFileTracker()
@@ -92,6 +97,7 @@ const server: Plugin = async (input, _options) => {
     newProjectCommand,
     mapCodebaseCommand,
     settingsCommand,
+    doctorCommand,
     discussCommand,
     planCommand,
     roadmapCommand,
@@ -141,6 +147,9 @@ const server: Plugin = async (input, _options) => {
       "decision-trace": decisionTraceTool,
       "volatility-map": volatilityMapTool,
       "policy-engine": policyEngineTool,
+      "hash-edit": hashEditTool,
+      "council": councilTool,
+      "context-generator": contextGeneratorTool,
     },
 
     "shell.env": shellEnvHook,

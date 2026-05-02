@@ -1,6 +1,6 @@
 # FlowDeck Documentation
 
-FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orchestration to your development sessions. It coordinates 23 specialist agents through a four-phase cycle — discuss, plan, execute, review — with persistent state stored in your project's `.planning/` directory.
+FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orchestration to your development sessions. It coordinates 29 specialist agents through a four-phase cycle — discuss, plan, execute, review — with persistent state stored in your project's `.planning/` directory.
 
 ---
 
@@ -10,6 +10,7 @@ FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orch
 |----------|-------------|
 | [Installation](installation.md) | Prerequisites, all three install methods, verification commands, and how to uninstall |
 | [Quick Start](quick-start.md) | Step-by-step walkthrough of your first 15 minutes with FlowDeck |
+| [Best Practices](best-practices.md) | Maximize efficiency and safety with Spec-Driven Development and Ensemble Reasoning |
 
 ---
 
@@ -17,10 +18,10 @@ FlowDeck is an OpenCode plugin that brings structured, multi-agent workflow orch
 
 | Document | Description |
 |----------|-------------|
-| [Agents](agents.md) | All 23 agents — names, roles, models, and when to invoke each one |
+| [Agents](agents.md) | All 29 agents — names, roles, models, and when to invoke each one |
 | [Skills](skills.md) | All 24 skills — what each skill does and example prompts that activate it |
-| [Commands](commands.md) | All 23 slash commands — syntax, arguments, and what each command triggers |
-| [Workflows](workflows.md) | All 14 built-in workflows — flow diagrams, inputs, outputs, and agent involvement |
+| [Commands](commands.md) | All 27 slash commands — syntax, arguments, and what each command triggers |
+| [Workflows](workflows.md) | All 15 built-in workflows — flow diagrams, inputs, outputs, and agent involvement |
 | [Rules](rules.md) | Language and common rule files — what they enforce and how to activate them |
 | [Intelligence Features](intelligence.md) | 15 AI-safety features: impact radar, patch trust, blast radius, decision trace, and more |
 

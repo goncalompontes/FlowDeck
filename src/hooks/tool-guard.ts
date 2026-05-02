@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { codebaseDir } from "../tools/codebase-state"
+import { readPlanningState } from "../tools/planning-state-lib"
 
 const BLOCKED_PATTERNS = {
   read: [".env", ".pem", ".key", ".secret"],
@@ -89,16 +90,34 @@ export function checkArchConstraint(directory: string, filePath: string): BlockR
 }
 
 /**
+ * Phase Enforcement Guard.
+ * Prevents writing to the codebase during planning phases.
+ */
+export function checkPhaseEnforcement(directory: string): BlockReason {
+  try {
+    const state = readPlanningState(directory)
+    // Phases: 1=discuss, 2=plan, 3=execute, 4=review
+    // Block write/edit if in phase 1 or 2
+    if (state.phase > 0 && state.phase < 3) {
+      return `FLOWDECK [phase-gate]: writing to codebase is blocked in phase ${state.phase} (${state.phase === 1 ? "discuss" : "plan"}). Run /fd-plan --confirm to enter execute phase.`
+    }
+  } catch {
+    // If STATE.md doesn't exist or is invalid, don't block
+  }
+  return null
+}
+
+/**
  * HOOK-04: Tool guard hook
  * Called on tool.execute.before for all tools.
- * Blocks dangerous read/write/bash/edit operations and arch-constraint violations.
+ * Blocks dangerous read/write/bash/edit operations, arch-constraint violations, and premature implementation.
  */
 export async function toolGuardHook(
   ctx: { directory: string },
   input: { tool: string },
   output: { args: any }
 ): Promise<void> {
-  // Check known dangerous tools including edit (per proposal spec line 412)
+  // Check known dangerous tools including edit
   if (input.tool !== "bash" && input.tool !== "read" && input.tool !== "write" && input.tool !== "edit") {
     return
   }
@@ -108,8 +127,15 @@ export async function toolGuardHook(
     throw new Error(blockReason)
   }
 
-  // Arch-constraint check on write/edit
+  // Phase & Arch-constraint check on write/edit
   if (input.tool === "write" || input.tool === "edit") {
+    // 1. Phase enforcement
+    const phaseBlock = checkPhaseEnforcement(ctx.directory)
+    if (phaseBlock) {
+      throw new Error(phaseBlock)
+    }
+
+    // 2. Arch-constraint check
     const filePath: string = output.args?.filePath ?? output.args?.path ?? ""
     const constraintBlock = checkArchConstraint(ctx.directory, filePath)
     if (constraintBlock) {

@@ -10,16 +10,17 @@ FlowDeck adds a structured, multi-agent development workflow to OpenCode. It coo
 
 - 🤖 **25 agents** — architect, planner, coder, reviewer, tester, debugger, risk-analyst, policy-enforcer, and more
 - 🛠️ **24 skills** — reusable workflow patterns (TDD, security scan, deploy check, code review, and more)
-- ⚡ **20 commands** — 15 workflow commands + 4 umbrella analysis commands + `/fd-ask` smart dispatch
-- 📋 **14 workflows** — pre-built orchestration flows for common engineering tasks
+- ⚡ **24 commands** — 19 workflow commands + 4 umbrella analysis commands + `/fd-ask` smart dispatch
+- 📋 **15 workflows** — pre-built orchestration flows including Spec-Driven Development (SDD)
 - 🔄 **Persistent state** — resume exactly where you left off across sessions via `.planning/STATE.md`
 - 🔀 **Parallel execution** — independent tasks run simultaneously in wave-structured batches
 - 📐 **Language rules** — coding standards for TypeScript, Python, Go, Java, and Rust
 - 🗂️ **Multi-repo support** — coordinate changes across multiple repositories in one session
 - 🔔 **System notifications** — desktop alerts when long-running tasks complete
-- 🛡️ **AI Safety layer** — patch trust scoring, edit gates, arch constraint enforcement, failure replay, and regression prediction built into every workflow
+- 🛡️ **AI Safety layer** — patch trust scoring, edit gates, phase gating, arch constraint enforcement, failure replay, and regression prediction built into every workflow
 - 🪝 **Deep System Hooks** — context window monitoring, session idle summaries, shell environment injection, and structured compaction to prevent context loss
 - 🌐 **Built-in MCPs** — Context7 (docs), Exa (web search), and Grep.app (code search) included and enabled by default
+- 💎 **Ensemble Reasoning** — `/fd-council` tool for synthesized consensus from multiple specialized agents
 
 ---
 
@@ -92,6 +93,8 @@ State is written to `.planning/STATE.md` after each phase. Use `/fd-checkpoint` 
 | `/fd-settings` | Configure FlowDeck settings and execution mode |
 | `/fd-multi-repo` | Multi-repo management |
 | `/fd-ask` | Smart agent dispatch — routes to the right agent by keyword |
+| `/fd-doctor` | Check FlowDeck installation and environment health |
+| `/fd-council` | Ensemble-based reasoning from multiple specialized agents |
 
 ### Analysis commands
 

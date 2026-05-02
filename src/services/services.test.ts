@@ -206,7 +206,16 @@ describe("policy-compiler", () => {
   it("evaluatePolicies returns empty array with no policies file", async () => {
     const { evaluatePolicies } = await import("../services/policy-compiler")
     const violations = evaluatePolicies(TMP, { command: "fd-fix-bug" })
-    expect(violations).toEqual([])
+    // Hardcoded TDD_POLICIES are always returned if they match the trigger
+    expect(violations).toEqual([
+      {
+        policy_id: "tdd-bugfix-requires-regression-test",
+        policy_name: "Bugfix requires regression test",
+        rule: "Every bugfix must include a regression test unless override is explicitly granted",
+        severity: "warn",
+        trigger: "fd-fix-bug",
+      },
+    ])
   })
 
   it("evaluatePolicies matches trigger keywords in context", async () => {
