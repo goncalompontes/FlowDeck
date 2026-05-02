@@ -51,8 +51,8 @@ if (fs.existsSync(agentSrc) && fs.existsSync(agentDest)) {
   }
 }
 
-// Remove Commands
-const cmdSrc = path.join(pkgRoot, 'commands');
+// Remove Commands (installed by older versions of FlowDeck)
+const cmdSrc = path.join(pkgRoot, 'docs', 'commands');
 const cmdDest = path.join(configDir, 'command');
 if (fs.existsSync(cmdSrc) && fs.existsSync(cmdDest)) {
   for (const f of fs.readdirSync(cmdSrc)) {

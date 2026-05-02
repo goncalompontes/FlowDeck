@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Install FlowDeck agents/skills/commands into OpenCode config dir
+# install.sh — Install FlowDeck agents/skills into OpenCode config dir
 # Usage: bash install.sh [--local]
 set -euo pipefail
 
@@ -27,7 +27,7 @@ if [ ! -f "$SCRIPT_DIR/dist/index.js" ]; then
   cd - > /dev/null
 fi
 
-mkdir -p "$OPENCODE_DIR/agent" "$OPENCODE_DIR/skills" "$OPENCODE_DIR/command"
+mkdir -p "$OPENCODE_DIR/agent" "$OPENCODE_DIR/skills"
 
 # Install agents
 agent_count=0
@@ -48,15 +48,6 @@ for d in "$SCRIPT_DIR/skills/"/*/; do
   skill_count=$((skill_count + 1))
 done
 success "Installed $skill_count skills → $OPENCODE_DIR/skills/"
-
-# Install commands
-cmd_count=0
-for f in "$SCRIPT_DIR/commands/"*.md; do
-  [ -f "$f" ] || continue
-  cp "$f" "$OPENCODE_DIR/command/$(basename "$f")"
-  cmd_count=$((cmd_count + 1))
-done
-success "Installed $cmd_count commands → $OPENCODE_DIR/command/"
 
 # Register plugin in opencode.json using node (available everywhere bun is)
 OPENCODE_JSON="$OPENCODE_DIR/opencode.json"
