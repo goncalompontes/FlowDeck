@@ -30,7 +30,8 @@
     "build": "bun build src/index.ts --outdir dist --target bun --format esm --external @opencode-ai/plugin --external @opencode-ai/sdk && tsc --emitDeclarationOnly && bun build src/dashboard/server.ts --outfile dist/dashboard/server.mjs --target bun --format esm && cp -r src/dashboard/views dist/dashboard/views",
     "postinstall": "node postinstall.mjs",
     "prepublishOnly": "bun run clean && bun run build",
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": ["opencode", "plugin", "ai", "workflow", "planning"],
   "author": "DVNghiem",
