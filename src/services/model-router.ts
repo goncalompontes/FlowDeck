@@ -96,6 +96,7 @@ const STANDARD_TIER_AGENTS = [
   "planner",
   "researcher",
   "code-explorer",
+  "ideator",
   "backend-coder",
   "frontend-coder",
   "tester",
@@ -126,6 +127,7 @@ const AGENT_TIER_MAP: Record<string, AgentTier> = {
   "planner": "standard",
   "researcher": "standard",
   "code-explorer": "standard",
+  "ideator": "standard",
   "backend-coder": "standard",
   "frontend-coder": "standard",
   "tester": "standard",
@@ -156,6 +158,7 @@ export function getTierForAgent(agentName: string): AgentTier {
 const STAGE_AGENT_ALLOWLISTS: Record<string, string[]> = {
   discuss: [
     "discusser",
+    "ideator",
     "researcher",
     "code-explorer",
     "supervisor",
@@ -167,6 +170,7 @@ const STAGE_AGENT_ALLOWLISTS: Record<string, string[]> = {
     "architect",
     "researcher",
     "code-explorer",
+    "ideator",
     "task-splitter",
     "plan-checker",
   ],
