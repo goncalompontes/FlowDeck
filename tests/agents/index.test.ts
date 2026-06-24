@@ -21,6 +21,10 @@ describe("AGENT_NAMES", () => {
     expect(AGENT_NAMES).toContain("default-executor")
   })
 
+  it("includes 'ideator'", () => {
+    expect(AGENT_NAMES).toContain("ideator")
+  })
+
   it("includes 'orchestrator' as the first agent", () => {
     expect(AGENT_NAMES[0]).toBe("orchestrator")
   })
@@ -47,6 +51,7 @@ describe("AGENT_NAMES", () => {
       "task-splitter",
       "discusser",
       "architect",
+      "ideator",
       "risk-analyst",
       "policy-enforcer",
       "performance-optimizer",

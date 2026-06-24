@@ -29,6 +29,7 @@ import { mergeAssistTool } from "./tools/merge-assist"
 import { planningStateTool } from "./tools/planning-state"
 import { policyEngineTool } from "./tools/policy-engine"
 import { repoMemoryTool } from "./tools/repo-memory"
+import { ideaToWorkflowTool } from "./tools/idea-to-workflow"
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 
@@ -138,6 +139,7 @@ const plugin: Plugin = async ({ directory, client }) => {
       "merge-assist": mergeAssistTool,
       "capture-lesson": captureLessonTool,
       "review-lessons": reviewLessonsTool,
+      "idea-to-workflow": ideaToWorkflowTool,
     },
 
     "tool.execute.before": async (toolInput: any, toolOutput: any) => {

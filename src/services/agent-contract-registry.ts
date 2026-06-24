@@ -431,6 +431,33 @@ const CONTRACTS: AgentContract[] = [
       "verification command (build, typecheck, tests) passes",
     ],
   },
+  {
+    agent: "ideator",
+    role: "Decompose vague ideas into structured, organized workflows with phases, agent assignments, and dependency maps.",
+    allowedTaskTypes: ["idea-decomposition", "workflow-structuring", "task-breakdown"],
+    requiredInputs: ["vague idea description", "codebase context"],
+    expectedOutputFields: ["decomposedTasks", "phases", "agentAssignments", "dependencyEdges"],
+    allowedTools: ["read", "glob", "grep", "planning-state", "codebase-state", "codegraph"],
+    forbiddenActions: [
+      "write application code",
+      "modify source files",
+      "run bash commands",
+      "implement features",
+    ],
+    escalationConditions: [
+      "ambiguous requirements",
+      "conflicting constraints",
+      "insufficient context to decompose",
+    ],
+    stopConditions: [
+      "IdeaWorkflowResult produced",
+      "decomposition complete and approved",
+    ],
+    successCriteria: [
+      "structured decomposition with phases, agents, and dependencies",
+      "all D-XX decisions traced",
+    ],
+  },
 ]
 
 const REGISTRY = new Map<string, AgentContract>(CONTRACTS.map(c => [c.agent, c]))

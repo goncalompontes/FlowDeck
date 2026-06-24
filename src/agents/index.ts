@@ -38,6 +38,7 @@ import {
 import { createAutoLearnerAgent } from './auto-learner';
 import { createDesignAgent } from './design';
 import { createSupervisorAgent } from './supervisor';
+import { createIdeatorAgent } from './ideator';
 import { createDefaultExecutorAgent } from './default-executor';
 import { getDisabledAgentsForStage } from '../services/model-router';
 
@@ -63,6 +64,7 @@ export const AGENT_NAMES: readonly string[] = [
   'task-splitter',
   'discusser',
   'architect',
+  'ideator',
   'risk-analyst',
   'policy-enforcer',
   'performance-optimizer',
@@ -187,6 +189,12 @@ export function createAgent(
       return createDiscusserAgent(model, customPrompt, customAppendPrompt);
     case 'architect':
       return createArchitectAgent(
+        model,
+        customPrompt,
+        customAppendPrompt,
+      );
+    case 'ideator':
+      return createIdeatorAgent(
         model,
         customPrompt,
         customAppendPrompt,
@@ -353,6 +361,7 @@ export {
   createTaskSplitterAgent,
   createDiscusserAgent,
   createArchitectAgent,
+  createIdeatorAgent,
   createRiskAnalystAgent,
   createPolicyEnforcerAgent,
   createPerformanceOptimizerAgent,
