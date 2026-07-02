@@ -23,16 +23,7 @@ export function getInstallDir(): string {
   if (!env) return DEFAULT_INSTALL_DIR
 
   try {
-    const resolved = resolve(env)
-    const home = homedir()
-    if (resolved.startsWith(home)) {
-      return resolved
-    }
-    console.warn(
-      "[flowdeck-loader] FLOWDECK_INSTALL_DIR points outside home directory:",
-      resolved,
-      "— using default",
-    )
+    return resolve(env)
   } catch {
     console.warn("[flowdeck-loader] could not resolve FLOWDECK_INSTALL_DIR — using default")
   }

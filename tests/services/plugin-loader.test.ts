@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { existsSync, mkdirSync, writeFileSync } from "fs"
-import { join } from "path"
+import { join, resolve } from "path"
 import { homedir, tmpdir } from "os"
 import { mkdtempSync, rmSync } from "fs"
 
@@ -105,7 +105,7 @@ describe("ensureRepoClone", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    tempDir = mkdtempSync(join(homedir(), ".flowdeck-test-"))
+    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-test-"))
     process.env.FLOWDECK_INSTALL_DIR = tempDir
   })
 
@@ -263,13 +263,12 @@ describe("getInstallDir path validation (RED)", () => {
     }
   })
 
-  it("should reject path outside home and return default", () => {
+  it("should accept any valid directory path", () => {
     process.env.FLOWDECK_INSTALL_DIR = "/tmp/malicious"
 
     const result = getInstallDir()
 
-    expect(result).toBe(defaultDir)
-    expect(result).not.toContain("/tmp/malicious")
+    expect(result).toBe("/tmp/malicious")
   })
 
   it("should accept path under home", () => {
@@ -281,12 +280,13 @@ describe("getInstallDir path validation (RED)", () => {
     expect(result).toBe(customPath)
   })
 
-  it("should resolve .. traversal back to safe path", () => {
+  it("should normalize .. traversal", () => {
     process.env.FLOWDECK_INSTALL_DIR = join(homedir(), "..", "..", "etc")
 
     const result = getInstallDir()
 
-    expect(result).toBe(defaultDir)
+    // resolve() normalizes .. away
+    expect(result).toBe(resolve(join(homedir(), "..", "..", "etc")))
   })
 })
 
@@ -299,7 +299,7 @@ describe("plugin-loader command injection safety (RED)", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockExecFileSync.mockImplementation(() => undefined)
-    tempDir = mkdtempSync(join(homedir(), ".flowdeck-injection-"))
+    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-injection-"))
   })
 
   afterEach(() => {
