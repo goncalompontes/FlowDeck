@@ -16,6 +16,7 @@ import {
   buildPlugin,
   loadPluginFromRepo,
   checkNpmRegistry,
+  logFlowDeck,
 } from "./services/plugin-loader"
 
 const plugin: Plugin = async (input) => {
@@ -48,7 +49,7 @@ const plugin: Plugin = async (input) => {
           timeout: 60_000,
         })
       } catch (e) {
-        console.warn("[flowdeck-loader]", "npm install failed:", (e as Error)?.message ?? "unknown")
+        logFlowDeck("npm install failed:", (e as Error)?.message ?? "unknown")
       }
     }
 
@@ -59,7 +60,7 @@ const plugin: Plugin = async (input) => {
     // Step 4: Load plugin from repo clone
     pluginFactory = await loadPluginFromRepo(installDir)
   } catch (e) {
-    console.warn("[flowdeck-loader]", "update/load cycle failed:", (e as Error)?.message ?? "unknown")
+    logFlowDeck("update/load cycle failed:", (e as Error)?.message ?? "unknown")
   }
 
   // Phase 2: If repo plugin loaded, delegate to it

@@ -9,12 +9,107 @@
  */
 
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync } from "node:fs"
+import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { homedir } from "node:os"
 import type { Plugin } from "@opencode-ai/plugin"
 
 const DEFAULT_INSTALL_DIR = join(homedir(), ".local", "share", "flowdeck")
+
+const LOCK_FILE_NAME = ".update.lock"
+const LOCK_MAX_AGE_MS = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Conditional logger for flowdeck-loader messages.
+ * Only prints to console when FLOWDECK_DEBUG is set,
+ * keeping startup clean for regular users.
+ */
+export function logFlowDeck(...args: unknown[]): void {
+  if (process.env.FLOWDECK_DEBUG) {
+    console.warn("[flowdeck-loader]", ...args)
+  }
+}
+
+/** Full path to the lock file for the given install directory. */
+function lockFilePath(installDir: string): string {
+  return join(installDir, LOCK_FILE_NAME)
+}
+
+/**
+ * Validate a lock timestamp string against known-bad values.
+ * Returns the parsed timestamp number if valid, or null if the content
+ * is Infinity, NaN, a future timestamp, or a clearly prehistoric date.
+ */
+function validateLockTimestamp(content: string): number | null {
+  const ts = Number(content)
+  if (!isFinite(ts) || isNaN(ts)) return null
+  if (ts > Date.now() + LOCK_MAX_AGE_MS) return null // future timestamp
+  if (ts < 1_700_000_000_000) return null // before ~2023 — invalid
+  return ts
+}
+
+/**
+ * Acquire an advisory lock for coordinating git/build operations across
+ * multiple OpenCode instances.
+ *
+ * Uses `mkdirSync` which is atomic on most filesystems — it succeeds only
+ * once; concurrent callers get EEXIST.  This avoids the TOCTOU race
+ * inherent in the old exists → read → unlink → write sequence.
+ *
+ * Returns `true` if the lock was acquired (caller should proceed with the
+ * protected operation), `false` if another instance holds a recent lock
+ * (caller should skip the operation).
+ *
+ * Stale locks older than LOCK_MAX_AGE_MS are cleaned up automatically
+ * (crash recovery).
+ */
+export function acquireLock(installDir: string): boolean {
+  const lockPath = lockFilePath(installDir)
+  try {
+    // Atomic directory creation — succeeds only once
+    mkdirSync(lockPath, { recursive: false })
+    // We got the lock — write a timestamp file inside
+    writeFileSync(join(lockPath, "ts"), String(Date.now()), "utf-8")
+    return true
+  } catch (err: unknown) {
+    const nodeErr = err as { code?: string }
+    if (nodeErr.code === "EEXIST") {
+      // Lock directory already exists — check if it is stale
+      try {
+        const tsPath = join(lockPath, "ts")
+        if (existsSync(tsPath)) {
+          const content = readFileSync(tsPath, "utf-8")
+          const ts = validateLockTimestamp(content)
+          if (ts !== null && Date.now() - ts < LOCK_MAX_AGE_MS) {
+            // Lock is recent — another instance holds it
+            return false
+          }
+        }
+        // Lock is stale (or ts file missing / invalid) — remove and retry
+        rmSync(lockPath, { recursive: true, force: true })
+        mkdirSync(lockPath, { recursive: false })
+        writeFileSync(join(lockPath, "ts"), String(Date.now()), "utf-8")
+        return true
+      } catch {
+        // Fallback: proceed without locking
+        return true
+      }
+    }
+    // Other errors — proceed without locking
+    return true
+  }
+}
+
+/**
+ * Release a lock held by the current instance.
+ */
+export function releaseLock(installDir: string): void {
+  try {
+    rmSync(lockFilePath(installDir), { recursive: true, force: true })
+  } catch {
+    // Non-fatal
+  }
+}
 
 /** Resolve the install directory from env or default. */
 export function getInstallDir(): string {
@@ -23,9 +118,18 @@ export function getInstallDir(): string {
   if (!env) return DEFAULT_INSTALL_DIR
 
   try {
-    return resolve(env)
+    const resolved = resolve(env)
+    const home = homedir()
+    if (!resolved.startsWith(home)) {
+      console.warn(
+        "[flowdeck-loader]",
+        `FLOWDECK_INSTALL_DIR (${resolved}) is outside home directory — using default`,
+      )
+      return DEFAULT_INSTALL_DIR
+    }
+    return resolved
   } catch {
-    console.warn("[flowdeck-loader] could not resolve FLOWDECK_INSTALL_DIR — using default")
+    console.warn("[flowdeck-loader]", "could not resolve FLOWDECK_INSTALL_DIR — using default")
   }
 
   return DEFAULT_INSTALL_DIR
@@ -33,6 +137,15 @@ export function getInstallDir(): string {
 
 const NPM_REGISTRY_URL = "https://registry.npmjs.org/@dv.nghiem/flowdeck/latest"
 const REPO_URL = "https://github.com/DVNghiem/FlowDeck.git"
+
+/**
+ * Resolve the repository URL from environment or default.
+ * FLOWDECK_REPO_URL overrides the default GitHub URL for local
+ * development and testing (e.g., file:/// or a local path).
+ */
+export function getRepoUrl(): string {
+  return process.env.FLOWDECK_REPO_URL ?? REPO_URL
+}
 
 export interface LoaderResult {
   hooks: Awaited<ReturnType<Plugin>>
@@ -79,7 +192,7 @@ export async function checkNpmRegistry(): Promise<{
 
     return { latest: data.version, updateAvailable, current }
   } catch (e) {
-    console.warn("[flowdeck-loader]", "npm registry check failed:", (e as Error)?.message ?? "unknown")
+    logFlowDeck("npm registry check failed:", (e as Error)?.message ?? "unknown")
     return null
   }
 }
@@ -90,56 +203,85 @@ export async function checkNpmRegistry(): Promise<{
  * Returns the install directory path.
  */
 export function ensureRepoClone(): string {
-  if (existsSync(join(getInstallDir(), ".git"))) {
-    try {
-      execFileSync("git", ["pull", "--quiet"], {
-        cwd: getInstallDir(),
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "ignore"],
-        timeout: 30_000,
-      })
-      // Log the pulled commit hash
-      try {
-        const headHash = execFileSync("git", ["rev-parse", "HEAD"], {
-          cwd: getInstallDir(),
-          encoding: "utf-8",
-          stdio: ["pipe", "pipe", "ignore"],
-          timeout: 10_000,
-        }).trim()
-        console.warn("[flowdeck-loader]", "updated to commit", headHash.slice(0, 12))
-      } catch { /* non-fatal */ }
-    } catch (e) {
-      console.warn("[flowdeck-loader]", "git pull failed:", (e as Error)?.message ?? "unknown")
-    }
-  } else {
-    mkdirSync(getInstallDir(), { recursive: true })
-    try {
-      execFileSync("git", ["clone", "--depth", "1", "--quiet", REPO_URL, getInstallDir()], {
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
-        timeout: 60_000,
-      })
-      // Log the cloned commit hash for audit trail
-      try {
-        const headHash = execFileSync("git", ["rev-parse", "HEAD"], {
-          cwd: getInstallDir(),
-          encoding: "utf-8",
-          stdio: ["pipe", "pipe", "ignore"],
-          timeout: 10_000,
-        }).trim()
-        console.warn("[flowdeck-loader]", "cloned at commit", headHash.slice(0, 12))
-      } catch { /* non-fatal */ }
-    } catch (e) {
-      console.warn("[flowdeck-loader]", "git clone failed:", (e as Error)?.message ?? "unknown")
-    }
+  const installDir = getInstallDir()
+
+  if (!acquireLock(installDir)) {
+    logFlowDeck("another instance has the lock, skipping git pull")
+    return installDir
   }
-  return getInstallDir()
+
+  try {
+    if (existsSync(join(installDir, ".git"))) {
+      // If FLOWDECK_REPO_URL is set, update origin to match
+      const repoUrl = getRepoUrl()
+      if (process.env.FLOWDECK_REPO_URL && repoUrl !== REPO_URL) {
+        try {
+          execFileSync("git", ["remote", "set-url", "origin", repoUrl], {
+            cwd: installDir,
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "ignore"],
+            timeout: 10_000,
+          })
+        } catch { /* non-fatal */ }
+      }
+      try {
+        execFileSync("git", ["pull", "--quiet"], {
+          cwd: installDir,
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "ignore"],
+          timeout: 30_000,
+        })
+        // Log the pulled commit hash
+        try {
+          const headHash = execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: installDir,
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "ignore"],
+            timeout: 10_000,
+          }).trim()
+          logFlowDeck("updated to commit", headHash.slice(0, 12))
+        } catch { /* non-fatal */ }
+      } catch (e) {
+        logFlowDeck("git pull failed:", (e as Error)?.message ?? "unknown")
+      }
+    } else {
+      mkdirSync(installDir, { recursive: true })
+      try {
+        execFileSync("git", ["clone", "--depth", "1", "--quiet", getRepoUrl(), installDir], {
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "pipe"],
+          timeout: 60_000,
+        })
+        // Log the cloned commit hash for audit trail
+        try {
+          const headHash = execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: installDir,
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "ignore"],
+            timeout: 10_000,
+          }).trim()
+          logFlowDeck("cloned at commit", headHash.slice(0, 12))
+        } catch { /* non-fatal */ }
+      } catch (e) {
+        logFlowDeck("git clone failed:", (e as Error)?.message ?? "unknown")
+      }
+    }
+  } finally {
+    releaseLock(installDir)
+  }
+
+  return installDir
 }
 
 /**
  * Build the plugin in the repo clone. Non-fatal if build fails.
  */
 export function buildPlugin(installDir: string): void {
+  if (!acquireLock(installDir)) {
+    logFlowDeck("another instance has the lock, skipping build")
+    return
+  }
+
   try {
     execFileSync("bun", ["run", "build"], {
       cwd: installDir,
@@ -148,7 +290,9 @@ export function buildPlugin(installDir: string): void {
       timeout: 120_000,
     })
   } catch (e) {
-    console.warn("[flowdeck-loader]", "build failed:", (e as Error)?.message ?? "unknown")
+    logFlowDeck("build failed:", (e as Error)?.message ?? "unknown")
+  } finally {
+    releaseLock(installDir)
   }
 }
 
@@ -167,7 +311,7 @@ export async function loadPluginFromRepo(
     if (typeof defaultExport !== "function") return null
     return defaultExport
   } catch (e) {
-    console.warn("[flowdeck-loader]", "load plugin from repo failed:", (e as Error)?.message ?? "unknown")
+    logFlowDeck("load plugin from repo failed:", (e as Error)?.message ?? "unknown")
     return null
   }
 }

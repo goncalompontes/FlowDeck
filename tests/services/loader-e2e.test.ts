@@ -153,6 +153,44 @@ describe("auto-update loader end-to-end", () => {
     expect(toolNames).toContain("codegraph")
   })
 
+  it("should not emit [flowdeck-loader] console.warn when FLOWDECK_DEBUG is not set and update fails", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    // All update steps fail
+    checkNpmRegistrySpy!.mockRejectedValue(new Error("Network error"))
+    loadPluginFromRepoSpy!.mockResolvedValue(null)
+
+    const { default: plugin } = await import("../../src/index")
+    await plugin({ directory: "/tmp/test" } as any)
+
+    // No [flowdeck-loader] prefixed console.warn should be emitted
+    const flowdeckWarns = warnSpy.mock.calls.filter(
+      (c: unknown[]) => String(c[0] ?? "") === "[flowdeck-loader]",
+    )
+    expect(flowdeckWarns).toHaveLength(0)
+
+    warnSpy.mockRestore()
+  })
+
+  it("should emit [flowdeck-loader] console.warn when FLOWDECK_DEBUG is set and update fails", async () => {
+    process.env.FLOWDECK_DEBUG = "1"
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    checkNpmRegistrySpy!.mockRejectedValue(new Error("Network error"))
+    loadPluginFromRepoSpy!.mockResolvedValue(null)
+
+    const { default: plugin } = await import("../../src/index")
+    await plugin({ directory: "/tmp/test" } as any)
+
+    const flowdeckWarns = warnSpy.mock.calls.filter(
+      (c: unknown[]) => String(c[0] ?? "") === "[flowdeck-loader]",
+    )
+    expect(flowdeckWarns.length).toBeGreaterThan(0)
+
+    delete process.env.FLOWDECK_DEBUG
+    warnSpy.mockRestore()
+  })
+
   it("should pass --ignore-scripts to npm install", async () => {
     const cp = await import("node:child_process")
     const execSpy = vi.spyOn(cp, "execFileSync").mockImplementation(() => "" as any)

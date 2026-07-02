@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { existsSync, mkdirSync, writeFileSync } from "fs"
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs"
 import { join, resolve } from "path"
 import { homedir, tmpdir } from "os"
 import { mkdtempSync, rmSync } from "fs"
@@ -28,6 +28,9 @@ import {
   buildPlugin,
   loadPluginFromRepo,
   getInstallDir,
+  getRepoUrl,
+  acquireLock,
+  releaseLock,
 } from "@/services/plugin-loader"
 
 describe("checkNpmRegistry", () => {
@@ -105,7 +108,7 @@ describe("ensureRepoClone", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-test-"))
+    tempDir = mkdtempSync(join(homedir(), ".flowdeck-test-"))
     process.env.FLOWDECK_INSTALL_DIR = tempDir
   })
 
@@ -167,6 +170,34 @@ describe("ensureRepoClone", () => {
 
     expect(result).toBe(tempDir)
     expect(existsSync(tempDir)).toBe(true)
+  })
+})
+
+describe("getRepoUrl", () => {
+  const originalRepoUrl = process.env.FLOWDECK_REPO_URL
+
+  afterEach(() => {
+    if (originalRepoUrl !== undefined) {
+      process.env.FLOWDECK_REPO_URL = originalRepoUrl
+    } else {
+      delete process.env.FLOWDECK_REPO_URL
+    }
+  })
+
+  it("should return FLOWDECK_REPO_URL when set", () => {
+    process.env.FLOWDECK_REPO_URL = "file:///home/user/local-repo"
+
+    const result = getRepoUrl()
+
+    expect(result).toBe("file:///home/user/local-repo")
+  })
+
+  it("should return default GitHub URL when not set", () => {
+    delete process.env.FLOWDECK_REPO_URL
+
+    const result = getRepoUrl()
+
+    expect(result).toBe("https://github.com/DVNghiem/FlowDeck.git")
   })
 })
 
@@ -249,6 +280,205 @@ describe("loadPluginFromRepo", () => {
   })
 })
 
+// ── Lock mechanism tests ───────────────────────────────────────────────────────
+
+describe("lock mechanism", () => {
+  let tempDir: string
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-lock-"))
+  })
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true })
+    vi.resetAllMocks()
+  })
+
+  it("acquireLock should return true when no lock file exists", () => {
+    const result = acquireLock(tempDir)
+    expect(result).toBe(true)
+    // Clean up
+    releaseLock(tempDir)
+  })
+
+  it("acquireLock should create lock directory with timestamp file", () => {
+    try {
+      acquireLock(tempDir)
+      const lockDir = join(tempDir, ".update.lock")
+      expect(existsSync(lockDir)).toBe(true)
+      const tsPath = join(lockDir, "ts")
+      expect(existsSync(tsPath)).toBe(true)
+      const content = readFileSync(tsPath, "utf-8")
+      expect(Number(content)).not.toBeNaN()
+      expect(Number(content)).toBeGreaterThan(0)
+    } finally {
+      releaseLock(tempDir)
+    }
+  })
+
+  it("acquireLock should return false when lock exists and is recent (< 5 min)", () => {
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    writeFileSync(join(lockDir, "ts"), String(Date.now()), "utf-8")
+
+    const result = acquireLock(tempDir)
+    expect(result).toBe(false)
+  })
+
+  it("acquireLock should return true and clean up stale lock (> 5 min old)", () => {
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    // Create a stale lock (6 minutes old)
+    writeFileSync(join(lockDir, "ts"), String(Date.now() - 6 * 60 * 1000), "utf-8")
+
+    const result = acquireLock(tempDir)
+    expect(result).toBe(true)
+    // Should have replaced the lock with a fresh one
+    expect(existsSync(lockDir)).toBe(true)
+    const tsPath = join(lockDir, "ts")
+    expect(existsSync(tsPath)).toBe(true)
+    const content = readFileSync(tsPath, "utf-8")
+    expect(Number(content)).toBeGreaterThan(Date.now() - 2000)
+    releaseLock(tempDir)
+  })
+
+  it("acquireLock should treat Infinity timestamp as stale", () => {
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    writeFileSync(join(lockDir, "ts"), String(Infinity), "utf-8")
+
+    const result = acquireLock(tempDir)
+    expect(result).toBe(true)
+    releaseLock(tempDir)
+  })
+
+  it("acquireLock should treat NaN timestamp as stale", () => {
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    writeFileSync(join(lockDir, "ts"), "not-a-number", "utf-8")
+
+    const result = acquireLock(tempDir)
+    expect(result).toBe(true)
+    releaseLock(tempDir)
+  })
+
+  it("acquireLock should treat future timestamp as stale", () => {
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    // A timestamp far in the future
+    writeFileSync(join(lockDir, "ts"), String(Date.now() + 999_999_999), "utf-8")
+
+    const result = acquireLock(tempDir)
+    expect(result).toBe(true)
+    releaseLock(tempDir)
+  })
+
+  it("releaseLock should remove the lock directory", () => {
+    acquireLock(tempDir)
+    const lockDir = join(tempDir, ".update.lock")
+    expect(existsSync(lockDir)).toBe(true)
+
+    releaseLock(tempDir)
+    expect(existsSync(lockDir)).toBe(false)
+  })
+
+  it("releaseLock should not throw when lock does not exist", () => {
+    expect(() => releaseLock(tempDir)).not.toThrow()
+  })
+})
+
+describe("ensureRepoClone respects lock", () => {
+  const originalDir = process.env.FLOWDECK_INSTALL_DIR
+  let tempDir: string
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    tempDir = mkdtempSync(join(homedir(), ".flowdeck-lock-"))
+    process.env.FLOWDECK_INSTALL_DIR = tempDir
+  })
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true })
+    if (originalDir !== undefined) {
+      process.env.FLOWDECK_INSTALL_DIR = originalDir
+    } else {
+      delete process.env.FLOWDECK_INSTALL_DIR
+    }
+    vi.resetAllMocks()
+  })
+
+  it("should skip git pull when lock is held by another instance", () => {
+    // Create a recent lock directory
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    writeFileSync(join(lockDir, "ts"), String(Date.now()), "utf-8")
+    mkdirSync(join(tempDir, ".git"), { recursive: true })
+
+    mockExecFileSync.mockImplementation(() => undefined)
+
+    ensureRepoClone()
+
+    // git pull should NOT have been called
+    const gitPullCalls = mockExecFileSync.mock.calls.filter(
+      (c: unknown[]) => c[0] === "git" && (c[1] as string[])?.includes("pull"),
+    )
+    expect(gitPullCalls).toHaveLength(0)
+  })
+
+  it("should proceed with git pull when no lock exists", () => {
+    mkdirSync(join(tempDir, ".git"), { recursive: true })
+    mockExecFileSync.mockImplementation(() => undefined)
+
+    ensureRepoClone()
+
+    const gitPullCalls = mockExecFileSync.mock.calls.filter(
+      (c: unknown[]) => c[0] === "git" && (c[1] as string[])?.includes("pull"),
+    )
+    expect(gitPullCalls.length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe("buildPlugin respects lock", () => {
+  let tempDir: string
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-build-lock-"))
+  })
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true })
+    vi.resetAllMocks()
+  })
+
+  it("should skip build when lock is held by another instance", () => {
+    const lockDir = join(tempDir, ".update.lock")
+    mkdirSync(lockDir, { recursive: false })
+    writeFileSync(join(lockDir, "ts"), String(Date.now()), "utf-8")
+
+    mockExecFileSync.mockImplementation(() => undefined)
+
+    buildPlugin(tempDir)
+
+    const bunCalls = mockExecFileSync.mock.calls.filter(
+      (c: unknown[]) => c[0] === "bun",
+    )
+    expect(bunCalls).toHaveLength(0)
+  })
+
+  it("should proceed with build when no lock exists", () => {
+    mockExecFileSync.mockImplementation(() => undefined)
+
+    buildPlugin(tempDir)
+
+    const bunCalls = mockExecFileSync.mock.calls.filter(
+      (c: unknown[]) => c[0] === "bun",
+    )
+    expect(bunCalls.length).toBeGreaterThanOrEqual(1)
+  })
+})
+
 // ── Supply chain integrity tests (RED: will fail until getInstallDir validates) ──
 
 describe("getInstallDir path validation (RED)", () => {
@@ -263,12 +493,12 @@ describe("getInstallDir path validation (RED)", () => {
     }
   })
 
-  it("should accept any valid directory path", () => {
+  it("should reject path outside home directory", () => {
     process.env.FLOWDECK_INSTALL_DIR = "/tmp/malicious"
 
     const result = getInstallDir()
 
-    expect(result).toBe("/tmp/malicious")
+    expect(result).toBe(defaultDir)
   })
 
   it("should accept path under home", () => {
@@ -280,13 +510,13 @@ describe("getInstallDir path validation (RED)", () => {
     expect(result).toBe(customPath)
   })
 
-  it("should normalize .. traversal", () => {
+  it("should reject .. traversal that escapes home", () => {
     process.env.FLOWDECK_INSTALL_DIR = join(homedir(), "..", "..", "etc")
 
     const result = getInstallDir()
 
-    // resolve() normalizes .. away
-    expect(result).toBe(resolve(join(homedir(), "..", "..", "etc")))
+    // resolve() normalizes .. away; the result (/etc) is outside home
+    expect(result).toBe(defaultDir)
   })
 })
 
