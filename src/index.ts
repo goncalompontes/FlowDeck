@@ -22,6 +22,15 @@ const plugin: Plugin = async (input) => {
   // Phase 1: Update check + install (time-budgeted, non-blocking on failure)
   let pluginFactory: Plugin | null = null
 
+  // In test environments, skip the update cycle to avoid side effects
+  // (network calls, git operations, builds) and immediately delegate to
+  // the bundled plugin. Tests that need to exercise the loader should
+  // temporarily set NODE_ENV to "development" or similar.
+  if (process.env.NODE_ENV === "test") {
+    const { default: bundledPlugin } = await import("./plugin/index.js")
+    return (bundledPlugin as Plugin)(input)
+  }
+
   try {
     // Step 1: Check npm registry for updates
     const registryInfo = await checkNpmRegistry()
