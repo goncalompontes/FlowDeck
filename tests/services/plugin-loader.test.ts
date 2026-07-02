@@ -529,7 +529,8 @@ describe("plugin-loader command injection safety (RED)", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockExecFileSync.mockImplementation(() => undefined)
-    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-injection-"))
+    // Use homedir() so getInstallDir() home-directory validation passes in CI
+    tempDir = mkdtempSync(join(homedir(), ".flowdeck-injection-"))
   })
 
   afterEach(() => {
