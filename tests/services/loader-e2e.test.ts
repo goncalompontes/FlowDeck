@@ -4,15 +4,11 @@
  * Tests the full lifecycle of the plugin loader in src/index.ts:
  *   checkNpmRegistry → npm install (if update) → ensureRepoClone → buildPlugin → loadPluginFromRepo → fallback
  *
- * SAFETY: Does NOT mock ../../src/plugin/index. Fallback tests always load the
- * real bundled plugin. This avoids the cross-test leakage seen in the previous
- * version where a top-level vi.mock("../../src/plugin/index") persisted into
- * removed-tools.test.ts and returned undefined.
- *
- * Vi API notes (Bun vitest limitations):
- * - vi.doMock, vi.unmock, vi.mocked, vi.importActual are NOT available in Bun
- * - vi.spyOn IS available — used to intercept execFileSync on the real module
- * - vi.fn() IS available — used for all plugin-loader mock functions
+ * DESIGN: Uses vi.spyOn (not vi.mock) to intercept plugin-loader exports.
+ * This avoids cross-file mock leakage — vi.mock in Bun persists across test
+ * files, breaking plugin-loader.test.ts which tests the real module.
+ * ES module live bindings ensure spies take effect before dynamic imports of
+ * src/index.ts resolve.
  *
  * Temp override: src/index.ts skips the update cycle when NODE_ENV === "test".
  * This test sets NODE_ENV to "development" so the loader runs for real.
@@ -21,26 +17,13 @@
 
 import { vi, describe, it, expect, beforeEach, afterAll } from "vitest"
 
-// ── Module-level mock variables ───────────────────────────────────────────────
-// Reassigned in beforeEach so each test gets fresh mocks.
-// The vi.mock factories close over these variables — reassignment takes effect
-// per test because the factory delegates via (...args) => variable(...args).
+// ── Module-level spy variables ────────────────────────────────────────────────
+// Replaced in beforeEach so each test gets fresh spies.
 
-let mockCheckNpmRegistry = vi.fn()
-let mockEnsureRepoClone = vi.fn()
-let mockBuildPlugin = vi.fn()
-let mockLoadPluginFromRepo = vi.fn()
-
-// ── Top-level mocks ───────────────────────────────────────────────────────────
-// These modules are ONLY imported by the auto-update loader, so no other test
-// file is affected by these mocks.
-
-vi.mock("../../src/services/plugin-loader", () => ({
-  checkNpmRegistry: (...args: unknown[]) => mockCheckNpmRegistry(...args),
-  ensureRepoClone: (...args: unknown[]) => mockEnsureRepoClone(...args),
-  buildPlugin: (...args: unknown[]) => mockBuildPlugin(...args),
-  loadPluginFromRepo: (...args: unknown[]) => mockLoadPluginFromRepo(...args),
-}))
+let checkNpmRegistrySpy: ReturnType<typeof vi.spyOn> | null = null
+let ensureRepoCloneSpy: ReturnType<typeof vi.spyOn> | null = null
+let buildPluginSpy: ReturnType<typeof vi.spyOn> | null = null
+let loadPluginFromRepoSpy: ReturnType<typeof vi.spyOn> | null = null
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -50,13 +33,24 @@ describe("auto-update loader end-to-end", () => {
     process.env.NODE_ENV = "test"
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Override NODE_ENV so the loader doesn't skip the update cycle
     process.env.NODE_ENV = "development"
-    mockCheckNpmRegistry = vi.fn()
-    mockEnsureRepoClone = vi.fn()
-    mockBuildPlugin = vi.fn()
-    mockLoadPluginFromRepo = vi.fn()
+
+    // Import and spy on the real plugin-loader module.
+    // ES module live bindings ensure src/index.ts's static imports resolve to
+    // the spied versions when dynamically imported later.
+    const pluginLoader = await import("../../src/services/plugin-loader")
+
+    checkNpmRegistrySpy?.mockRestore()
+    ensureRepoCloneSpy?.mockRestore()
+    buildPluginSpy?.mockRestore()
+    loadPluginFromRepoSpy?.mockRestore()
+
+    checkNpmRegistrySpy = vi.spyOn(pluginLoader, "checkNpmRegistry")
+    ensureRepoCloneSpy = vi.spyOn(pluginLoader, "ensureRepoClone")
+    buildPluginSpy = vi.spyOn(pluginLoader, "buildPlugin")
+    loadPluginFromRepoSpy = vi.spyOn(pluginLoader, "loadPluginFromRepo")
   })
 
   it("should check npm, install update, clone repo, build, and load from repo", async () => {
@@ -65,31 +59,29 @@ describe("auto-update loader end-to-end", () => {
     const cp = await import("node:child_process")
     const execSpy = vi.spyOn(cp, "execFileSync").mockImplementation(() => "" as any)
 
-    const { default: plugin } = await import("../../src/index")
-
-    const mockRepoFactory = vi.fn().mockResolvedValue({ name: "repo-plugin" })
-
-    mockCheckNpmRegistry.mockResolvedValue({
+    checkNpmRegistrySpy!.mockResolvedValue({
       updateAvailable: true,
       latest: "0.7.0",
       current: "0.6.0",
     })
-    mockEnsureRepoClone.mockReturnValue("/home/user/.local/share/flowdeck")
-    mockBuildPlugin.mockImplementation(() => {})
-    mockLoadPluginFromRepo.mockResolvedValue(mockRepoFactory as any)
+    ensureRepoCloneSpy!.mockReturnValue("/home/user/.local/share/flowdeck")
+    buildPluginSpy!.mockImplementation(() => {})
+    loadPluginFromRepoSpy!.mockResolvedValue(vi.fn().mockResolvedValue({ name: "repo-plugin" }) as any)
+
+    const { default: plugin } = await import("../../src/index")
 
     const result = await plugin({ directory: "/tmp/test" } as any)
 
-    expect(mockCheckNpmRegistry).toHaveBeenCalledOnce()
+    expect(checkNpmRegistrySpy).toHaveBeenCalledOnce()
     expect(execSpy).toHaveBeenCalledWith(
       "npm",
       ["install", "--ignore-scripts", "@dv.nghiem/flowdeck@latest"],
       expect.objectContaining({ timeout: 60_000 }),
     )
-    expect(mockEnsureRepoClone).toHaveBeenCalledOnce()
-    expect(mockBuildPlugin).toHaveBeenCalledWith("/home/user/.local/share/flowdeck")
-    expect(mockLoadPluginFromRepo).toHaveBeenCalledWith("/home/user/.local/share/flowdeck")
-    expect(mockRepoFactory).toHaveBeenCalledWith({ directory: "/tmp/test" })
+    expect(ensureRepoCloneSpy).toHaveBeenCalledOnce()
+    expect(buildPluginSpy).toHaveBeenCalledWith("/home/user/.local/share/flowdeck")
+    expect(loadPluginFromRepoSpy).toHaveBeenCalledWith("/home/user/.local/share/flowdeck")
+
     expect(result).toEqual({ name: "repo-plugin" })
 
     execSpy.mockRestore()
@@ -99,19 +91,18 @@ describe("auto-update loader end-to-end", () => {
     const cp = await import("node:child_process")
     const execSpy = vi.spyOn(cp, "execFileSync").mockImplementation(() => "" as any)
 
-    const { default: plugin } = await import("../../src/index")
-
-    mockCheckNpmRegistry.mockResolvedValue({
+    checkNpmRegistrySpy!.mockResolvedValue({
       updateAvailable: false,
       latest: "0.6.0",
       current: "0.6.0",
     })
-    mockEnsureRepoClone.mockReturnValue("/home/user/.local/share/flowdeck")
-    mockLoadPluginFromRepo.mockResolvedValue(vi.fn() as any)
+    ensureRepoCloneSpy!.mockReturnValue("/home/user/.local/share/flowdeck")
+    loadPluginFromRepoSpy!.mockResolvedValue(vi.fn() as any)
 
+    const { default: plugin } = await import("../../src/index")
     await plugin({ directory: "/tmp/test" } as any)
 
-    expect(mockCheckNpmRegistry).toHaveBeenCalledOnce()
+    expect(checkNpmRegistrySpy).toHaveBeenCalledOnce()
     const npmCalls = execSpy.mock.calls.filter(
       (c: unknown[]) => c[0] === "npm",
     )
@@ -121,18 +112,17 @@ describe("auto-update loader end-to-end", () => {
   })
 
   it("should fall back to bundled plugin when repo load fails", async () => {
-    const { default: plugin } = await import("../../src/index")
-
-    mockCheckNpmRegistry.mockResolvedValue({
+    checkNpmRegistrySpy!.mockResolvedValue({
       updateAvailable: true,
       latest: "0.7.0",
       current: "0.6.0",
     })
-    mockEnsureRepoClone.mockReturnValue("/home/user/.local/share/flowdeck")
-    mockBuildPlugin.mockImplementation(() => {})
+    ensureRepoCloneSpy!.mockReturnValue("/home/user/.local/share/flowdeck")
+    buildPluginSpy!.mockImplementation(() => {})
     // repo load returns null — triggers fallback to bundled plugin
-    mockLoadPluginFromRepo.mockResolvedValue(null)
+    loadPluginFromRepoSpy!.mockResolvedValue(null)
 
+    const { default: plugin } = await import("../../src/index")
     const result = await plugin({ directory: "/tmp/test" } as any)
 
     // Fallback loaded the real src/plugin/index.ts which returns the full plugin
@@ -146,12 +136,11 @@ describe("auto-update loader end-to-end", () => {
   })
 
   it("should fall back when all update steps fail", async () => {
-    const { default: plugin } = await import("../../src/index")
-
     // All update steps fail (checkNpmRegistry rejects)
-    mockCheckNpmRegistry.mockRejectedValue(new Error("Network error"))
-    mockLoadPluginFromRepo.mockResolvedValue(null)
+    checkNpmRegistrySpy!.mockRejectedValue(new Error("Network error"))
+    loadPluginFromRepoSpy!.mockResolvedValue(null)
 
+    const { default: plugin } = await import("../../src/index")
     const result = await plugin({ directory: "/tmp/test" } as any)
 
     // Fallback to real bundled plugin
@@ -168,17 +157,16 @@ describe("auto-update loader end-to-end", () => {
     const cp = await import("node:child_process")
     const execSpy = vi.spyOn(cp, "execFileSync").mockImplementation(() => "" as any)
 
-    const { default: plugin } = await import("../../src/index")
-
-    mockCheckNpmRegistry.mockResolvedValue({
+    checkNpmRegistrySpy!.mockResolvedValue({
       updateAvailable: true,
       latest: "0.7.0",
       current: "0.6.0",
     })
-    mockEnsureRepoClone.mockReturnValue("/home/user/.local/share/flowdeck")
-    mockBuildPlugin.mockImplementation(() => {})
-    mockLoadPluginFromRepo.mockResolvedValue(vi.fn() as any)
+    ensureRepoCloneSpy!.mockReturnValue("/home/user/.local/share/flowdeck")
+    buildPluginSpy!.mockImplementation(() => {})
+    loadPluginFromRepoSpy!.mockResolvedValue(vi.fn() as any)
 
+    const { default: plugin } = await import("../../src/index")
     await plugin({ directory: "/tmp/test" } as any)
 
     const npmCalls = execSpy.mock.calls.filter(
