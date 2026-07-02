@@ -299,7 +299,7 @@ describe("plugin-loader command injection safety (RED)", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockExecFileSync.mockImplementation(() => undefined)
-    tempDir = mkdtempSync(join(tmpdir(), "flowdeck-injection-"))
+    tempDir = mkdtempSync(join(homedir(), ".flowdeck-injection-"))
   })
 
   afterEach(() => {
